@@ -8,10 +8,11 @@ Promise.all([
   // Build lookup from District Code to graduation rate
   const gradByCode = {};
   gradRates.forEach(d => {
-    console.log("Sample keys from gradByCode:", Object.keys(gradByCode).slice(0, 5));
-    const code = d["District Code"].toString().padStart(8, "0");
+  const code = d["District Code"].toString().padStart(8, "0");
+  const raw = d["Graduation Rate"];
+
     if (+d["Year"] === selectedYear) {
-      gradByCode[code] = +d["Graduation Rate"];
+      console.log(`Code: ${code} | Raw grad rate: '${raw}'`);
     }
   });
 
