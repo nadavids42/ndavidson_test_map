@@ -36,8 +36,13 @@ Promise.all([
     .append("path")
     .attr("d", path)
     .attr("fill", d => {
-      const code = d.properties.ORG8CODE;
+      const code = d.properties.ORG8CODE?.trim();  // .trim() in case of whitespace
       const rate = gradByCode[code];
+
+      if (!rate) {
+        console.log(`No data for code: ${code}`);
+      }
+
       return rate ? color(rate) : "#ccc";
     })
     .attr("stroke", "#333")
