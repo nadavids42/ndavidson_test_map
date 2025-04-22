@@ -20,9 +20,8 @@ Promise.all([
     }
   }
 });
-
-  console.log("Sample gradByCode lookup:", Object.entries(gradByCode).slice(0, 5));
-
+  
+  console.log("Valid gradByCode entries:", Object.entries(gradByCode).slice(0, 5));
   const width = 800;
   const height = 700;
 
