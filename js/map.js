@@ -9,14 +9,18 @@ Promise.all([
   const gradByCode = {};
   gradRates.forEach(d => {
   const code = d["District Code"].toString().padStart(8, "0");
+
   if (+d["Year"] === selectedYear) {
-    let rate = d["Graduation Rate"];
+    let rate = d["% Graduated"];
     if (typeof rate === "string") {
       rate = rate.replace("%", "").trim();
     }
+
     rate = parseFloat(rate);
     if (!isNaN(rate)) {
       gradByCode[code] = rate;
+    } else {
+      console.log(`Could not parse graduation rate: '${d["% Graduated"]}' for code ${code}`);
     }
   }
 });
