@@ -52,7 +52,9 @@ Promise.all([
       const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
       const rate = gradByCode[code];
 
-      console.log("GeoJSON code:", code, "| Matched rate:", rate);
+      if (rate === undefined) {
+        console.log("No graduation rate for district:", code, d.properties.DISTRICT);
+      }
 
       return rate ? color(rate) : "#ccc";
     })
