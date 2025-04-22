@@ -8,6 +8,7 @@ Promise.all([
   // Build lookup from District Code to graduation rate
   const gradByCode = {};
   gradRates.forEach(d => {
+    console.log("Sample keys from gradByCode:", Object.keys(gradByCode).slice(0, 5));
     const code = d["District Code"].toString().padStart(8, "0");
     if (+d["Year"] === selectedYear) {
       gradByCode[code] = +d["Graduation Rate"];
@@ -42,9 +43,7 @@ Promise.all([
       const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
       const rate = gradByCode[code];
 
-      if (!rate) {
-        console.log(`No data for code: ${code}`);
-      }
+      console.log("GeoJSON code:", code, "| Matched rate:", rate);
 
       return rate ? color(rate) : "#ccc";
     })
