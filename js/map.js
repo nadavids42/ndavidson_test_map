@@ -3,11 +3,18 @@ Promise.all([
   d3.csv("data/Cleaned_grad_rates.csv"),
   d3.csv("data/Cleaned_salaries.csv")
 ]).then(([districts, gradRates, salaries]) => {
-  console.log("GeoJSON loaded:", districts.features.length, "features");
-  console.log("Graduation rates:", gradRates.length, "rows");
-  console.log("Salaries:", salaries.length, "rows");
+  // Choose a year to display
+  const selectedYear = 2021;
 
-  // Optional: visualize one district just to verify it renders
+  // Filter grad data for that year
+  const gradByDistrict = {};
+  gradRates.forEach(d => {
+    if (+d.year === selectedYear) {
+      gradByDistrict[d.district_name.trim().toLowerCase()] = +d.graduation_rate;
+    }
+  });
+
+  // Create SVG and projection
   const width = 800;
   const height = 700;
 
@@ -21,11 +28,27 @@ Promise.all([
 
   const path = d3.geoPath().projection(projection);
 
+  // Color scale
+  const color = d3.scaleQuantize()
+    .domain([60, 100])  // adjust range based on your data
+    .range(d3.schemeBlues[7]);
+
+  // Draw districts
   svg.selectAll("path")
     .data(districts.features)
     .enter()
     .append("path")
     .attr("d", path)
-    .attr("fill", "#444")
-    .attr("stroke", "#999");
+    .attr("fill", d => {
+      const name = d.properties.DISTRICT.trim().toLowerCase();
+      const rate = gradByDistrict[name];
+      return rate ? color(rate) : "#ccc";
+    })
+    .attr("stroke", "#333")
+    .append("title") // basic tooltip
+    .text(d => {
+      const name = d.properties.DISTRICT;
+      const rate = gradByDistrict[name.trim().toLowerCase()];
+      return `${name}\nGraduation Rate (${selectedYear}): ${rate ?? 'N/A'}`;
+    });
 });
