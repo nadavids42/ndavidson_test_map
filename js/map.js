@@ -3,67 +3,74 @@ Promise.all([
   d3.csv("data/Cleaned_grad_rates.csv"),
   d3.csv("data/Cleaned_salaries.csv")
 ]).then(([districts, gradRates, salaries]) => {
-  const selectedYear = 2021;
-
-  // Build lookup from District Code to graduation rate
-  const gradByCode = {};
-  gradRates.forEach(d => {
-  const code = d["District Code"].toString().padStart(8, "0");
-
-  if (+d["Year"] === selectedYear) {
-    let rate = d["% Graduated"];
-    if (typeof rate === "string") {
-      rate = rate.replace("%", "").trim();
-    }
-
-    rate = parseFloat(rate);
-    if (!isNaN(rate)) {
-      gradByCode[code] = rate;
-    } else {
-      console.log(`Could not parse graduation rate: '${d["% Graduated"]}' for code ${code}`);
-    }
-  }
-});
-  
-  console.log("Valid gradByCode entries:", Object.entries(gradByCode).slice(0, 5));
   const width = 800;
   const height = 700;
+  const svg = d3.select("#map").append("svg").attr("width", width).attr("height", height);
 
-  const svg = d3.select("#map")
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height);
-
-  const projection = d3.geoMercator()
-    .fitSize([width, height], districts);
-
+  const projection = d3.geoMercator().fitSize([width, height], districts);
   const path = d3.geoPath().projection(projection);
 
-  const color = d3.scaleQuantize()
-    .domain([60, 100]) // tweak this range as needed
-    .range(d3.schemeBlues[7]);
+  const color = d3.scaleQuantize().domain([60, 100]).range(d3.schemeBlues[7]);
 
-  svg.selectAll("path")
-    .data(districts.features)
-    .enter()
-    .append("path")
-    .attr("d", path)
-    .attr("fill", d => {
-      const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-      const rate = gradByCode[code];
+  const allYears = Array.from(new Set(gradRates.map(d => d["Year"]))).sort();
+  const yearSelect = d3.select("#yearSelect");
+  const subtitle = d3.select("#subtitle");
 
-      if (rate === undefined) {
-        console.log("No graduation rate for district:", code, d.properties.DISTRICT);
+  allYears.forEach(year => {
+    yearSelect.append("option").attr("value", year).text(year);
+  });
+
+  yearSelect.on("change", () => {
+    const selectedYear = +yearSelect.node().value;
+    subtitle.text(`Graduation Rate: ${selectedYear}`);
+    updateMap(selectedYear);
+  });
+
+  function updateMap(selectedYear) {
+    const gradByCode = {};
+
+    gradRates.forEach(d => {
+      const code = d["District Code"].toString().padStart(8, "0");
+      if (+d["Year"] === selectedYear) {
+        let rate = d["% Graduated"];
+        if (typeof rate === "string") {
+          rate = rate.replace("%", "").trim();
+        }
+        rate = parseFloat(rate);
+        if (!isNaN(rate)) {
+          gradByCode[code] = rate;
+        }
       }
-
-      return rate ? color(rate) : "#ccc";
-    })
-    .attr("stroke", "#333")
-    .append("title")
-    .text(d => {
-      const name = d.properties.DISTRICT;
-      const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-      const rate = gradByCode[code];
-      return `${name} (${code})\nGraduation Rate (${selectedYear}): ${rate ?? 'N/A'}`;
     });
+
+    const paths = svg.selectAll("path").data(districts.features);
+
+    paths.enter()
+      .append("path")
+      .merge(paths)
+      .attr("d", path)
+      .attr("fill", d => {
+        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+        const rate = gradByCode[code];
+        return rate ? color(rate) : "#ccc";
+      })
+      .attr("stroke", "#333")
+      .selectAll("title").remove();
+
+    svg.selectAll("path")
+      .append("title")
+      .text(d => {
+        const name = d.properties.DISTRICT;
+        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+        const rate = gradByCode[code];
+        return `${name} (${code})\nGraduation Rate: ${rate ?? 'N/A'}`;
+      });
+
+    paths.exit().remove();
+  }
+
+  // Initial render
+  const initialYear = +yearSelect.node().value || 2021;
+  subtitle.text(`Graduation Rate: ${initialYear}`);
+  updateMap(initialYear);
 });
