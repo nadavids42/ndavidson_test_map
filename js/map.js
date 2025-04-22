@@ -3,31 +3,52 @@ Promise.all([
   d3.csv("data/Cleaned_grad_rates.csv"),
   d3.csv("data/Cleaned_salaries.csv")
 ]).then(([districts, gradRates, salaries]) => {
-  const width = 800;
-  const height = 700;
-  const svg = d3.select("#map").append("svg").attr("width", width).attr("height", height);
+  let selectedYear = 2021;
+  const gradByCode = {};
 
-  const projection = d3.geoMercator().fitSize([width, height], districts);
+  const width = 800;
+  const height = 600;
+
+  const svg = d3.select("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  const projection = d3.geoMercator()
+    .fitSize([width, height], districts);
+
   const path = d3.geoPath().projection(projection);
 
-  const color = d3.scaleQuantize().domain([60, 100]).range(d3.schemeBlues[7]);
+  // Color scale for graduation rates
+  const colorScale = d3.scaleLinear()
+    .domain([60, 100])
+    .range(["#f87171", "#22c55e"]);
 
-  const allYears = Array.from(new Set(gradRates.map(d => d["Year"]))).sort();
-  const yearSelect = d3.select("#yearSelect");
-  const subtitle = d3.select("#subtitle");
+  // Draw base map
+  svg.selectAll("path")
+    .data(districts.features)
+    .enter()
+    .append("path")
+    .attr("d", path)
+    .attr("stroke", "#333")
+    .attr("fill", "#ccc")
+    .attr("class", "district");
 
-  allYears.forEach(year => {
-    yearSelect.append("option").attr("value", year).text(year);
+  // Setup slider
+  const yearSlider = document.getElementById("yearSlider");
+  const yearValue = document.getElementById("yearValue");
+
+  yearSlider.addEventListener("input", () => {
+    selectedYear = +yearSlider.value;
+    yearValue.textContent = selectedYear;
+    updateMap();
   });
 
-  yearSelect.on("change", () => {
-    const selectedYear = +yearSelect.node().value;
-    subtitle.text(`Graduation Rate: ${selectedYear}`);
-    updateMap(selectedYear);
-  });
+  // Initial map draw
+  updateMap();
 
-  function updateMap(selectedYear) {
-    const gradByCode = {};
+  function updateMap() {
+    // Clear and rebuild gradByCode
+    Object.keys(gradByCode).forEach(k => delete gradByCode[k]);
 
     gradRates.forEach(d => {
       const code = d["District Code"].toString().padStart(8, "0");
@@ -43,34 +64,10 @@ Promise.all([
       }
     });
 
-    const paths = svg.selectAll("path").data(districts.features);
-
-    paths.enter()
-      .append("path")
-      .merge(paths)
-      .attr("d", path)
+    // Color map by grad rate
+    svg.selectAll(".district")
+      .transition()
+      .duration(500)
       .attr("fill", d => {
-        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+        const code = d.properties.DISTRICT.toString().padStart(8, "0");
         const rate = gradByCode[code];
-        return rate ? color(rate) : "#ccc";
-      })
-      .attr("stroke", "#333")
-      .selectAll("title").remove();
-
-    svg.selectAll("path")
-      .append("title")
-      .text(d => {
-        const name = d.properties.DISTRICT;
-        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-        const rate = gradByCode[code];
-        return `${name} (${code})\nGraduation Rate: ${rate ?? 'N/A'}`;
-      });
-
-    paths.exit().remove();
-  }
-
-  // Initial render
-  const initialYear = +yearSelect.node().value || 2021;
-  subtitle.text(`Graduation Rate: ${initialYear}`);
-  updateMap(initialYear);
-});
