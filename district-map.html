@@ -37,10 +37,14 @@
   <h1>Massachusetts Public School Districts</h1>
   <p class="subtitle" id="subtitle">Graduation Rate: 2021</p>
 
-<!--   <label for="yearSelect">Select Year:</label>
-  <select id="yearSelect"></select -->
-  <label for="yearSlider" class="block text-white font-semibold mb-2">Select Year: <span id="yearValue">2021</span></label>
-  <input type="range" id="yearSlider" min="2013" max="2023" step="1" value="2021" class="w-full appearance-none bg-gray-300 h-2 rounded-lg outline-none cursor-pointer">
+<div class="my-4">
+  <label for="yearSlider" class="text-white font-semibold">
+    Year: <span id="yearValue">2021</span>
+  </label>
+  <input type="range" id="yearSlider" min="2013" max="2023" value="2021" step="1"
+         class="w-full appearance-none bg-gray-300 h-2 rounded-lg outline-none cursor-pointer">
+</div>
+<svg></svg>
 
 
   <div id="map"></div>
