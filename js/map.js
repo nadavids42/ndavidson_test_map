@@ -7,12 +7,12 @@ Promise.all([
 
   // Build lookup from District Code to graduation rate
   const gradByCode = {};
-  gradRates.forEach(d => {
-    if (+d.year === selectedYear) {
-      const code = d["District Code"].toString().padStart(8, "0");
-      gradByCode[code] = +d.graduation_rate;
-    }
-  });
+gradRates.forEach(d => {
+  const code = d["District Code"].toString().padStart(8, "0");  // ← this line is key
+  if (+d.year === selectedYear) {
+    gradByCode[code] = +d.graduation_rate;
+  }
+});
 
   const width = 800;
   const height = 700;
