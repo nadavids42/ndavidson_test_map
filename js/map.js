@@ -9,12 +9,17 @@ Promise.all([
   const gradByCode = {};
   gradRates.forEach(d => {
   const code = d["District Code"].toString().padStart(8, "0");
-  const raw = d["Graduation Rate"];
-
-    if (+d["Year"] === selectedYear) {
-      console.log(`Code: ${code} | Raw grad rate: '${raw}'`);
+  if (+d["Year"] === selectedYear) {
+    let rate = d["Graduation Rate"];
+    if (typeof rate === "string") {
+      rate = rate.replace("%", "").trim();
     }
-  });
+    rate = parseFloat(rate);
+    if (!isNaN(rate)) {
+      gradByCode[code] = rate;
+    }
+  }
+});
 
   console.log("Sample gradByCode lookup:", Object.entries(gradByCode).slice(0, 5));
 
