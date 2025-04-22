@@ -9,7 +9,8 @@ Promise.all([
   const gradByCode = {};
   gradRates.forEach(d => {
     if (+d.year === selectedYear) {
-      gradByCode[d["District Code"].trim()] = +d.graduation_rate;
+      const code = d["District Code"].toString().padStart(8, "0");
+      gradByCode[code] = +d.graduation_rate;
     }
   });
 
