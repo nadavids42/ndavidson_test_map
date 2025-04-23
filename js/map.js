@@ -1,3 +1,5 @@
+// map.js - Massachusetts Education Map with Slider for Year Selection
+
 Promise.all([
   d3.json("data/SchoolDistricts_poly.geojson"),
   d3.csv("data/Cleaned_grad_rates.csv"),
@@ -12,17 +14,25 @@ Promise.all([
 
   const color = d3.scaleQuantize().domain([60, 100]).range(d3.schemeBlues[7]);
 
-  const allYears = Array.from(new Set(gradRates.map(d => d["Year"]))).sort();
-  const yearSelect = d3.select("#yearSelect");
+  const yearSlider = d3.select("#yearSlider");
+  const yearValueLabel = d3.select("#yearValue");
   const subtitle = d3.select("#subtitle");
 
-  allYears.forEach(year => {
-    yearSelect.append("option").attr("value", year).text(year);
-  });
+  // Extract available years and configure slider
+  const allYears = Array.from(new Set(gradRates.map(d => +d["Year"]))).sort();
+  const minYear = d3.min(allYears);
+  const maxYear = d3.max(allYears);
 
-  yearSelect.on("change", () => {
-    const selectedYear = +yearSelect.node().value;
+  yearSlider
+    .attr("min", minYear)
+    .attr("max", maxYear)
+    .attr("value", maxYear)
+    .attr("step", 1);
+
+  yearSlider.on("input", () => {
+    const selectedYear = +yearSlider.node().value;
     subtitle.text(`Graduation Rate: ${selectedYear}`);
+    yearValueLabel.text(selectedYear);
     updateMap(selectedYear);
   });
 
@@ -70,7 +80,8 @@ Promise.all([
   }
 
   // Initial render
-  const initialYear = +yearSelect.node().value || 2021;
+  const initialYear = +yearSlider.node().value || maxYear;
   subtitle.text(`Graduation Rate: ${initialYear}`);
+  yearValueLabel.text(initialYear);
   updateMap(initialYear);
 });
