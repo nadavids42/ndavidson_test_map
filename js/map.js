@@ -36,7 +36,16 @@ Promise.all([
     updateMap(selectedYear);
   });
 
-  // Create color legend
+  // --- Draw map paths once ---
+  const features = svg.append("g").attr("class", "districts")
+    .selectAll("path")
+    .data(districts.features)
+    .enter()
+    .append("path")
+    .attr("d", path)
+    .attr("stroke", "#333");
+
+  // --- LEGEND: add this AFTER the map, so it is on top! ---
   const legendWidth = 300;
   const legendHeight = 10;
 
@@ -51,6 +60,7 @@ Promise.all([
     .attr("stop-color", d => color(60 + d * 40 / 7));
 
   const legend = svg.append("g")
+    .attr("class", "legend")
     .attr("transform", `translate(${width - legendWidth - 40}, ${height - 40})`);
 
   legend.append("rect")
@@ -76,55 +86,45 @@ Promise.all([
     .style("fill", "#eee");
 
   function updateMap(selectedYear) {
-  const gradByCode = {};
+    const gradByCode = {};
 
-  gradRates.forEach(d => {
-    const code = d["District Code"].toString().padStart(8, "0");
-    if (+d["Year"] === selectedYear) {
-      let rate = d["% Graduated"];
-      if (typeof rate === "string") {
-        rate = rate.replace("%", "").trim();
+    gradRates.forEach(d => {
+      const code = d["District Code"].toString().padStart(8, "0");
+      if (+d["Year"] === selectedYear) {
+        let rate = d["% Graduated"];
+        if (typeof rate === "string") {
+          rate = rate.replace("%", "").trim();
+        }
+        rate = parseFloat(rate);
+        if (!isNaN(rate)) {
+          gradByCode[code] = rate;
+        }
       }
-      rate = parseFloat(rate);
-      if (!isNaN(rate)) {
-        gradByCode[code] = rate;
-      }
-    }
-  });
-
-  const paths = svg.selectAll("path").data(districts.features);
-
-  paths.enter()
-    .append("path")
-    .merge(paths)
-    .attr("d", path)
-    .attr("fill", d => {
-      const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-      const rate = gradByCode[code];
-      return rate ? color(rate) : "#ccc";
-    })
-    .attr("stroke", "#333")
-    .on("click", function(event, d) {
-      const name = d.properties.DISTRICT_N;
-      const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-      const rate = gradByCode[code];
-
-      const infoBox = document.getElementById("info-box");
-      infoBox.innerHTML = `
-        <h3 style="margin-top: 0">${name || "Unknown District"}</h3>
-        <p><strong>District Code:</strong> ${code}</p>
-        <p><strong>Graduation Rate:</strong> ${rate !== undefined ? rate.toFixed(1) + "%" : "N/A"}</p>
-      `;
-      infoBox.style.display = "block";
     });
 
-  // Remove all <title> tags (hover tooltips)
-  svg.selectAll("path").selectAll("title").remove();
+    svg.selectAll("g.districts path")
+      .attr("fill", d => {
+        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+        const rate = gradByCode[code];
+        return rate ? color(rate) : "#ccc";
+      })
+      .on("click", function(event, d) {
+        const name = d.properties.DISTRICT;
+        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+        const rate = gradByCode[code];
 
-  paths.exit().remove();
-}
+        const infoBox = document.getElementById("info-box");
+        infoBox.innerHTML = `
+          <h3 style="margin-top: 0">${name || "Unknown District"}</h3>
+          <p><strong>District Code:</strong> ${code}</p>
+          <p><strong>Graduation Rate:</strong> ${rate !== undefined ? rate.toFixed(1) + "%" : "N/A"}</p>
+        `;
+        infoBox.style.display = "block";
+      });
 
-  
+    // Remove hover tooltips if any exist
+    svg.selectAll("g.districts path").selectAll("title").remove();
+  }
 
   // Initial render
   const initialYear = +yearSlider.node().value || maxYear;
