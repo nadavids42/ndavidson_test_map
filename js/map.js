@@ -61,10 +61,15 @@ Promise.all([
     })
     .attr("stroke", "#333")
     .attr("stroke-width", 0.5)
-    .append("title") // Tooltip with rate info
-    .text(d => {
-      const code = d.properties.DISTCODE.padStart(8, "0");
-      const rate = gradByCode[code];
-      return rate !== undefined ? `${d.properties.NAME}: ${rate.toFixed(1)}%` : `${d.properties.NAME}: No Data`;
-    });
+    .on("click", function(event, d) {
+  const code = d.properties.DISTCODE.padStart(8, "0");
+  const rate = gradByCode[code];
+  const infoBox = document.getElementById("info-box");
+
+  infoBox.innerHTML = `
+    <h3>${d.properties.NAME}</h3>
+    <p><strong>Graduation Rate:</strong> ${rate !== undefined ? `${rate.toFixed(1)}%` : "No Data"}</p>
+    <p><strong>District Code:</strong> ${code}</p>
+  `;
+  infoBox.style.display = "block";
 });
