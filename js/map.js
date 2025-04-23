@@ -109,7 +109,7 @@ Promise.all([
         return rate ? color(rate) : "#ccc";
       })
       .on("click", function(event, d) {
-        const name = d.properties.DISTRICT;
+        const name = d.properties.DISTRICT_N;
         const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
         const rate = gradByCode[code];
 
