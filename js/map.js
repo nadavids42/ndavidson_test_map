@@ -1,112 +1,76 @@
-// map.js - Massachusetts Education Map Visualization using D3.js
-
 Promise.all([
   d3.json("data/SchoolDistricts_poly.geojson"),
   d3.csv("data/Cleaned_grad_rates.csv"),
   d3.csv("data/Cleaned_salaries.csv")
 ]).then(([districts, gradRates, salaries]) => {
-  const selectedYear = 2021;
-
-  // Build lookup for graduation rates using padded 8-digit district codes
-  const gradByCode = {};
-  gradRates.forEach(d => {
-    const code = d["District Code"].toString().padStart(8, "0");
-    if (+d["Year"] === selectedYear) {
-      let rate = d["% Graduated"];
-      if (typeof rate === "string") {
-        rate = rate.replace("%", "").trim();
-      }
-      rate = parseFloat(rate);
-      if (!isNaN(rate)) {
-        gradByCode[code] = rate;
-      }
-    }
-  });
-
-  const allRates = Object.values(gradByCode);
-  const width = 960;
+  const width = 800;
   const height = 700;
+  const svg = d3.select("#map").append("svg").attr("width", width).attr("height", height);
 
-  const svg = d3.select("#map")
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height);
-
-  const projection = d3.geoAlbers()
-    .center([0, 42.3])
-    .rotate([71.8, 0])
-    .parallels([29.5, 45.5])
-    .scale(15000)
-    .translate([width / 2, height / 2]);
-
+  const projection = d3.geoMercator().fitSize([width, height], districts);
   const path = d3.geoPath().projection(projection);
 
-  const colorScale = d3.scaleSequential(d3.interpolateBlues)
-    .domain(d3.extent(allRates));
+  const color = d3.scaleQuantize().domain([60, 100]).range(d3.schemeBlues[7]);
 
-  const defs = svg.append("defs");
-  const legendGradient = defs.append("linearGradient")
-    .attr("id", "legend-gradient");
+  const allYears = Array.from(new Set(gradRates.map(d => d["Year"]))).sort();
+  const yearSelect = d3.select("#yearSelect");
+  const subtitle = d3.select("#subtitle");
 
-  legendGradient.selectAll("stop")
-    .data(d3.ticks(0, 1, 10))
-    .enter().append("stop")
-    .attr("offset", d => `${d * 100}%`)
-    .attr("stop-color", d => colorScale(60 + d * 40));
+  allYears.forEach(year => {
+    yearSelect.append("option").attr("value", year).text(year);
+  });
 
-  // Draw each district using ORG8CODE
-  svg.selectAll("path")
-    .data(districts.features)
-    .enter()
-    .append("path")
-    .attr("d", path)
-    .attr("fill", d => {
-      const code = d.properties.ORG8CODE;
-      const rate = gradByCode[code];
-      return rate !== undefined ? colorScale(rate) : "#ccc";
-    })
-    .attr("stroke", "#333")
-    .attr("stroke-width", 0.5)
-    .on("click", function (event, d) {
-      const code = d.properties.ORG8CODE;
-      const rate = gradByCode[code];
-      const infoBox = document.getElementById("info-box");
+  yearSelect.on("change", () => {
+    const selectedYear = +yearSelect.node().value;
+    subtitle.text(`Graduation Rate: ${selectedYear}`);
+    updateMap(selectedYear);
+  });
 
-      infoBox.innerHTML = `
-        <h3 style="margin: 0 0 0.5rem 0">${code}</h3>
-        <p><strong>Graduation Rate:</strong> ${rate !== undefined ? `${rate.toFixed(1)}%` : "No Data"}</p>
-        <p><strong>District Code:</strong> ${code}</p>
-      `;
-      infoBox.style.display = "block";
+  function updateMap(selectedYear) {
+    const gradByCode = {};
+
+    gradRates.forEach(d => {
+      const code = d["District Code"].toString().padStart(8, "0");
+      if (+d["Year"] === selectedYear) {
+        let rate = d["% Graduated"];
+        if (typeof rate === "string") {
+          rate = rate.replace("%", "").trim();
+        }
+        rate = parseFloat(rate);
+        if (!isNaN(rate)) {
+          gradByCode[code] = rate;
+        }
+      }
     });
 
-  // Add legend
-  const legendWidth = 300;
-  const legendHeight = 10;
+    const paths = svg.selectAll("path").data(districts.features);
 
-  const legend = svg.append("g")
-    .attr("transform", `translate(${width - legendWidth - 40}, ${height - 40})`);
+    paths.enter()
+      .append("path")
+      .merge(paths)
+      .attr("d", path)
+      .attr("fill", d => {
+        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+        const rate = gradByCode[code];
+        return rate ? color(rate) : "#ccc";
+      })
+      .attr("stroke", "#333")
+      .selectAll("title").remove();
 
-  legend.append("rect")
-    .attr("width", legendWidth)
-    .attr("height", legendHeight)
-    .style("fill", "url(#legend-gradient)")
-    .style("stroke", "#aaa")
-    .style("stroke-width", 0.5);
+    svg.selectAll("path")
+      .append("title")
+      .text(d => {
+        const name = d.properties.DISTRICT;
+        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+        const rate = gradByCode[code];
+        return `${name} (${code})\nGraduation Rate: ${rate ?? 'N/A'}`;
+      });
 
-  legend.append("text")
-    .attr("x", 0)
-    .attr("y", -5)
-    .text("Graduation Rate")
-    .style("fill", "#eee");
+    paths.exit().remove();
+  }
 
-  legend.selectAll("text.labels")
-    .data([60, 80, 100])
-    .enter()
-    .append("text")
-    .attr("x", d => (d - 60) / 40 * legendWidth)
-    .attr("y", 25)
-    .attr("text-anchor", "middle")
-    .text(d => `${d}%`)
-    .style("fill", "#eee");
+  // Initial render
+  const initialYear = +yearSelect.node().value || 2021;
+  subtitle.text(`Graduation Rate: ${initialYear}`);
+  updateMap(initialYear);
 });
