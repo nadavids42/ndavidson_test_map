@@ -1,4 +1,4 @@
-// map.js - 50-100% Graduation Rate Scale for Map & Scatterplot
+// map.js - Responsive SVGs for Map & Scatterplot
 
 Promise.all([
   d3.json("data/SchoolDistricts_poly.geojson"),
@@ -7,17 +7,28 @@ Promise.all([
 ]).then(([districts, gradRates, salaries]) => {
   const width = 800;
   const height = 600;
-  const svg = d3.select("#map").append("svg").attr("width", width).attr("height", height);
+  // --- Responsive map SVG ---
+  const svg = d3.select("#map").append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("preserveAspectRatio", "xMidYMid meet")
+    .style("width", "100%")
+    .style("height", "auto")
+    .style("max-width", "700px")
+    .style("display", "block")
+    .style("background", "#161925");
 
-  // --- Scatterplot config ---
+  // --- Responsive scatterplot SVG ---
   const scatterWidth = 480;
   const scatterHeight = 480;
   const margin = {top: 30, right: 30, bottom: 60, left: 70};
-
-  const scatterSvg = d3.select("#scatterplot")
-    .append("svg")
-    .attr("width", scatterWidth)
-    .attr("height", scatterHeight);
+  const scatterSvg = d3.select("#scatterplot").append("svg")
+    .attr("viewBox", `0 0 ${scatterWidth} ${scatterHeight}`)
+    .attr("preserveAspectRatio", "xMidYMid meet")
+    .style("width", "100%")
+    .style("height", "auto")
+    .style("max-width", "700px")
+    .style("display", "block")
+    .style("background", "#161925");
 
   const projection = d3.geoMercator().fitSize([width, height], districts);
   const path = d3.geoPath().projection(projection);
