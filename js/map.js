@@ -1,5 +1,3 @@
-// map.js - Massachusetts Education Map Visualization using D3.js
-
 Promise.all([
   d3.json("data/SchoolDistricts_poly.geojson"),
   d3.csv("data/Cleaned_grad_rates.csv"),
@@ -7,10 +5,9 @@ Promise.all([
 ]).then(([districts, gradRates, salaries]) => {
   const selectedYear = 2021;
 
-  // Create a lookup table for graduation rates
   const gradByCode = {};
   gradRates.forEach(d => {
-    const code = d["District Code"].toString(); // No zero-padding
+    const code = d["District Code"].toString().padStart(8, "0");
     if (+d["Year"] === selectedYear) {
       let rate = d["% Graduated"];
       if (typeof rate === "string") {
@@ -42,9 +39,8 @@ Promise.all([
   const path = d3.geoPath().projection(projection);
 
   const colorScale = d3.scaleSequential(d3.interpolateBlues)
-    .domain(d3.extent(allRates)); // Dynamic domain based on actual data
+    .domain(d3.extent(allRates));
 
-  // Add a defs block for the legend gradient
   const defs = svg.append("defs");
   const legendGradient = defs.append("linearGradient")
     .attr("id", "legend-gradient");
@@ -53,23 +49,22 @@ Promise.all([
     .data(d3.ticks(0, 1, 10))
     .enter().append("stop")
     .attr("offset", d => `${d * 100}%`)
-    .attr("stop-color", d => colorScale(60 + d * 40)); // Assume min around 60
+    .attr("stop-color", d => colorScale(60 + d * 40));
 
-  // Draw the map
   svg.selectAll("path")
     .data(districts.features)
     .enter()
     .append("path")
     .attr("d", path)
     .attr("fill", d => {
-      const code = d.properties.DISTCODE.toString(); // No padding
+      const code = d.properties.DISTCODE.toString().padStart(8, "0");
       const rate = gradByCode[code];
       return rate !== undefined ? colorScale(rate) : "#ccc";
     })
     .attr("stroke", "#333")
     .attr("stroke-width", 0.5)
     .on("click", function (event, d) {
-      const code = d.properties.DISTCODE.toString();
+      const code = d.properties.DISTCODE.toString().padStart(8, "0");
       const rate = gradByCode[code];
       const infoBox = document.getElementById("info-box");
 
@@ -81,7 +76,6 @@ Promise.all([
       infoBox.style.display = "block";
     });
 
-  // Add a legend
   const legendWidth = 300;
   const legendHeight = 10;
 
