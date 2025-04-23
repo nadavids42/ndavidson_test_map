@@ -42,7 +42,18 @@ Promise.all([
   const colorScale = d3.scaleSequential(d3.interpolateBlues)
     .domain([60, 100]);
 
-  // Draw map districts
+  // Add a defs block for gradient
+  const defs = svg.append("defs");
+  const legendGradient = defs.append("linearGradient")
+    .attr("id", "legend-gradient");
+
+  legendGradient.selectAll("stop")
+    .data(d3.ticks(0, 1, 10))
+    .enter().append("stop")
+    .attr("offset", d => `${d * 100}%`)
+    .attr("stop-color", d => colorScale(60 + d * 40));
+
+  // Draw map
   svg.selectAll("path")
     .data(districts.features)
     .enter()
@@ -68,37 +79,27 @@ Promise.all([
       infoBox.style.display = "block";
     });
 
-  // Add a color legend to help interpret the map
+  // Add legend
   const legendWidth = 300;
   const legendHeight = 10;
 
-  const legendSvg = svg.append("g")
+  const legend = svg.append("g")
     .attr("transform", `translate(${width - legendWidth - 40}, ${height - 40})`);
 
-  const legendGradient = svg.append("defs")
-    .append("linearGradient")
-    .attr("id", "legend-gradient");
-
-  legendGradient.selectAll("stop")
-    .data(d3.ticks(0, 1, 10))
-    .enter().append("stop")
-    .attr("offset", d => `${d * 100}%`)
-    .attr("stop-color", d => colorScale(60 + d * 40));
-
-  legendSvg.append("rect")
+  legend.append("rect")
     .attr("width", legendWidth)
     .attr("height", legendHeight)
     .style("fill", "url(#legend-gradient)")
     .style("stroke", "#aaa")
     .style("stroke-width", 0.5);
 
-  legendSvg.append("text")
+  legend.append("text")
     .attr("x", 0)
     .attr("y", -5)
     .text("Graduation Rate")
     .style("fill", "#eee");
 
-  legendSvg.selectAll("text.labels")
+  legend.selectAll("text.labels")
     .data([60, 80, 100])
     .enter()
     .append("text")
