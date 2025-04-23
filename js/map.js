@@ -1,4 +1,4 @@
-// map.js - Map + Scatterplot, Side-by-Side, Responsive
+// map.js - Map & Scatterplot with Linked Hover Highlighting
 
 Promise.all([
   d3.json("data/SchoolDistricts_poly.geojson"),
@@ -6,12 +6,12 @@ Promise.all([
   d3.csv("data/Cleaned_salaries.csv")
 ]).then(([districts, gradRates, salaries]) => {
   const width = 800;
-  const height = 700;
+  const height = 600;
   const svg = d3.select("#map").append("svg").attr("width", width).attr("height", height);
 
   // --- Scatterplot config ---
   const scatterWidth = 480;
-  const scatterHeight = 600;
+  const scatterHeight = 480;
   const margin = {top: 30, right: 30, bottom: 60, left: 70};
 
   const scatterSvg = d3.select("#scatterplot")
@@ -161,7 +161,6 @@ Promise.all([
   function updateScatterplot(gradByCode, salaryByCode, selectedYear) {
     // Prepare data
     const scatterData = Object.keys(gradByCode)
-      console.log('Scatterplot data count:', scatterData.length, 'Sample:', scatterData.slice(0,3));
       .filter(code => salaryByCode[code] !== undefined)
       .map(code => ({
         code,
@@ -217,8 +216,13 @@ Promise.all([
       .attr("fill", "#009bcd")
       .attr("stroke", "#fff")
       .attr("stroke-width", 1.2)
+      .attr("data-code", d => d.code) // for linking
       .on("mouseover", function(event, d) {
-        d3.select(this).attr("fill", "#ff6600");
+        d3.select(this).attr("fill", "#ff6600").attr("r", 10);
+        // Highlight corresponding map path
+        d3.selectAll(`#map path[data-code='${d.code}']`)
+          .attr("stroke", "#ff6600")
+          .attr("stroke-width", 4);
         // Show tooltip
         let tooltip = d3.select("#scatterplot-tooltip");
         if (tooltip.empty()) {
@@ -232,6 +236,7 @@ Promise.all([
         .style("position", "absolute")
         .style("pointer-events", "none")
         .style("background", "#fff")
+        .style("color", "#222")
         .style("border", "1px solid #ccc")
         .style("border-radius", "6px")
         .style("padding", "7px 11px")
@@ -246,8 +251,11 @@ Promise.all([
           .style("left", (event.pageX + 18) + "px")
           .style("top", (event.pageY - 10) + "px");
       })
-      .on("mouseleave", function() {
-        d3.select(this).attr("fill", "#009bcd");
+      .on("mouseleave", function(event, d) {
+        d3.select(this).attr("fill", "#009bcd").attr("r", 6);
+        d3.selectAll(`#map path[data-code='${d.code}']`)
+          .attr("stroke", "#333")
+          .attr("stroke-width", 1);
         d3.select("#scatterplot-tooltip").remove();
       })
       .on("click", function(event, d) {
@@ -270,8 +278,6 @@ Promise.all([
       .attr("font-weight", "bold")
       .attr("fill", "#1a3344")
       .text(`Graduation Rate vs. Salary (${selectedYear})`);
-
-    // (Optional: add regression/trend line later!)
   }
 
   function updateMap(selectedYear, metric) {
@@ -298,6 +304,21 @@ Promise.all([
         const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
         const val = getValue(code);
         return val ? color(val) : "#ccc";
+      })
+      .attr("data-code", d => d.properties.ORG8CODE?.toString().padStart(8, "0"))
+      .on("mouseover", function(event, d) {
+        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+        d3.select(this).attr("stroke", "#ff6600").attr("stroke-width", 4);
+        d3.selectAll(`#scatterplot circle[data-code='${code}']`)
+          .attr("fill", "#ff6600")
+          .attr("r", 10);
+      })
+      .on("mouseleave", function(event, d) {
+        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+        d3.select(this).attr("stroke", "#333").attr("stroke-width", 1);
+        d3.selectAll(`#scatterplot circle[data-code='${code}']`)
+          .attr("fill", "#009bcd")
+          .attr("r", 6);
       })
       .on("click", function(event, d) {
         const name = d.properties.DISTRICT_N;
