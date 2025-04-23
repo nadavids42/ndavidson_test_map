@@ -76,50 +76,55 @@ Promise.all([
     .style("fill", "#eee");
 
   function updateMap(selectedYear) {
-    const gradByCode = {};
+  const gradByCode = {};
 
-    gradRates.forEach(d => {
-      const code = d["District Code"].toString().padStart(8, "0");
-      if (+d["Year"] === selectedYear) {
-        let rate = d["% Graduated"];
-        if (typeof rate === "string") {
-          rate = rate.replace("%", "").trim();
-        }
-        rate = parseFloat(rate);
-        if (!isNaN(rate)) {
-          gradByCode[code] = rate;
-        }
+  gradRates.forEach(d => {
+    const code = d["District Code"].toString().padStart(8, "0");
+    if (+d["Year"] === selectedYear) {
+      let rate = d["% Graduated"];
+      if (typeof rate === "string") {
+        rate = rate.replace("%", "").trim();
       }
+      rate = parseFloat(rate);
+      if (!isNaN(rate)) {
+        gradByCode[code] = rate;
+      }
+    }
+  });
+
+  const paths = svg.selectAll("path").data(districts.features);
+
+  paths.enter()
+    .append("path")
+    .merge(paths)
+    .attr("d", path)
+    .attr("fill", d => {
+      const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+      const rate = gradByCode[code];
+      return rate ? color(rate) : "#ccc";
+    })
+    .attr("stroke", "#333")
+    .on("click", function(event, d) {
+      const name = d.properties.DISTRICT;
+      const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+      const rate = gradByCode[code];
+
+      const infoBox = document.getElementById("info-box");
+      infoBox.innerHTML = `
+        <h3 style="margin-top: 0">${name || "Unknown District"}</h3>
+        <p><strong>District Code:</strong> ${code}</p>
+        <p><strong>Graduation Rate:</strong> ${rate !== undefined ? rate.toFixed(1) + "%" : "N/A"}</p>
+      `;
+      infoBox.style.display = "block";
     });
 
-    const paths = svg.selectAll("path").data(districts.features);
+  // Remove all <title> tags (hover tooltips)
+  svg.selectAll("path").selectAll("title").remove();
 
-    paths.enter()
-      .append("path")
-      .merge(paths)
-      .attr("d", path)
-      .attr("fill", d => {
-        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-        const rate = gradByCode[code];
-        return rate ? color(rate) : "#ccc";
-      })
-      .attr("stroke", "#333")
-      .on("click", function(event, d) {
-        const name = d.properties.DISTRICT;
-        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-        const rate = gradByCode[code];
+  paths.exit().remove();
+}
 
-        const infoBox = document.getElementById("info-box");
-        infoBox.innerHTML = `
-          <h3 style="margin-top: 0">${name || "Unknown District"}</h3>
-          <p><strong>District Code:</strong> ${code}</p>
-          <p><strong>Graduation Rate:</strong> ${rate !== undefined ? rate.toFixed(1) + "%" : "N/A"}</p>
-        `;
-        infoBox.style.display = "block";
-      });
-
-    paths.exit().remove();
-  }
+  
 
   // Initial render
   const initialYear = +yearSlider.node().value || maxYear;
