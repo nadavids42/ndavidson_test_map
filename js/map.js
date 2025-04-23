@@ -359,8 +359,9 @@ Promise.all([
     const selectedMetric = metricSelect.node().value;
     subtitle.text(
       `${metricSelect.node().selectedOptions[0].text}: ${selectedYear}`
-      };
+    );
     yearValueLabel.text(selectedYear);
+
   updateMap(selectedYear, selectedMetric);
   }
 
