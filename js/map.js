@@ -1,4 +1,4 @@
-// map.js - Massachusetts Education Map with Slider, Gradient Legend, and Click Info
+// map.js - Robust Matching, Debug Logging, Slider, Legend, Info Box
 
 Promise.all([
   d3.json("data/SchoolDistricts_poly.geojson"),
@@ -37,7 +37,7 @@ Promise.all([
   });
 
   // --- Draw map paths once ---
-  const features = svg.append("g").attr("class", "districts")
+  svg.append("g").attr("class", "districts")
     .selectAll("path")
     .data(districts.features)
     .enter()
@@ -45,50 +45,50 @@ Promise.all([
     .attr("d", path)
     .attr("stroke", "#333");
 
-  // --- LEGEND (blue gradient, always visible and on top) ---
-const legendWidth = 300;
-const legendHeight = 10;
+  // --- LEGEND (smooth blue gradient, always visible and on top) ---
+  const legendWidth = 300;
+  const legendHeight = 10;
 
-const defs = svg.append("defs");
-const legendGradient = defs.append("linearGradient")
-  .attr("id", "legend-gradient");
+  const defs = svg.append("defs");
+  const legendGradient = defs.append("linearGradient")
+    .attr("id", "legend-gradient");
 
-// Build the gradient from 60 to 100 using d3.interpolateBlues
-legendGradient.selectAll("stop")
-  .data(d3.range(60, 101)) // 60, 61, ..., 100
-  .enter().append("stop")
-  .attr("offset", d => `${((d - 60) / 40) * 100}%`)
-  .attr("stop-color", d => d3.interpolateBlues((d - 60) / 40)); // 0 (light) to 1 (dark)
+  // 60 to 100 domain for legend, using interpolateBlues for smooth gradient
+  legendGradient.selectAll("stop")
+    .data(d3.range(60, 101)) // 60, 61, ..., 100
+    .enter().append("stop")
+    .attr("offset", d => `${((d - 60) / 40) * 100}%`)
+    .attr("stop-color", d => d3.interpolateBlues((d - 60) / 40));
 
-const legend = svg.append("g")
-  .attr("class", "legend")
-  .attr("transform", `translate(${width - legendWidth - 40}, ${height - 40})`);
+  const legend = svg.append("g")
+    .attr("class", "legend")
+    .attr("transform", `translate(${width - legendWidth - 40}, ${height - 40})`);
 
-legend.append("rect")
-  .attr("width", legendWidth)
-  .attr("height", legendHeight)
-  .style("fill", "url(#legend-gradient)")
-  .style("stroke", "#aaa");
+  legend.append("rect")
+    .attr("width", legendWidth)
+    .attr("height", legendHeight)
+    .style("fill", "url(#legend-gradient)")
+    .style("stroke", "#aaa");
 
-legend.append("text")
-  .attr("x", 0)
-  .attr("y", -5)
-  .text("Graduation Rate")
-  .style("fill", "#eee");
+  legend.append("text")
+    .attr("x", 0)
+    .attr("y", -5)
+    .text("Graduation Rate")
+    .style("fill", "#eee");
 
-legend.selectAll("text.labels")
-  .data([60, 80, 100])
-  .enter()
-  .append("text")
-  .attr("x", d => (d - 60) / 40 * legendWidth)
-  .attr("y", 25)
-  .attr("text-anchor", "middle")
-  .text(d => `${d}%`)
-  .style("fill", "#eee");
+  legend.selectAll("text.labels")
+    .data([60, 80, 100])
+    .enter()
+    .append("text")
+    .attr("x", d => (d - 60) / 40 * legendWidth)
+    .attr("y", 25)
+    .attr("text-anchor", "middle")
+    .text(d => `${d}%`)
+    .style("fill", "#eee");
 
   function updateMap(selectedYear) {
+    // Build lookup: always pad to 8 digits for consistent matching
     const gradByCode = {};
-
     gradRates.forEach(d => {
       const code = d["District Code"].toString().padStart(8, "0");
       if (+d["Year"] === selectedYear) {
@@ -105,12 +105,16 @@ legend.selectAll("text.labels")
 
     svg.selectAll("g.districts path")
       .attr("fill", d => {
+        // Always pad the ORG8CODE to 8 digits before lookup
         const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
         const rate = gradByCode[code];
+        if (rate === undefined) {
+          console.log('No graduation rate data for:', code, d.properties.DISTRICT_N);
+        }
         return rate ? color(rate) : "#ccc";
       })
       .on("click", function(event, d) {
-        const name = d.properties.DISTRICT_N;  // Correct property for name
+        const name = d.properties.DISTRICT_N;
         const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
         const rate = gradByCode[code];
 
