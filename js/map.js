@@ -105,7 +105,7 @@ Promise.all([
     })
     .attr("stroke", "#333")
     .on("click", function(event, d) {
-      const name = d.properties.DISTRICT;
+      const name = d.properties.DISTRICT_N;
       const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
       const rate = gradByCode[code];
 
