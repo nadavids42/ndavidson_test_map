@@ -1,75 +1,70 @@
-Promise.all([
-  d3.json("data/SchoolDistricts_poly.geojson"),
-  d3.csv("data/Cleaned_grad_rates.csv"),
-  d3.csv("data/Cleaned_salaries.csv")
-]).then(([districts, gradRates, salaries]) => {
-  const width = 800;
-  const height = 700;
-  const svg = d3.select("#map").append("svg").attr("width", width).attr("height", height);
+// map.js - Massachusetts Education Map Visualization using D3.js
 
-  const projection = d3.geoMercator().fitSize([width, height], districts);
+Promise.all([
+  d3.json("data/SchoolDistricts_poly.geojson"),  // GeoJSON for school district boundaries
+  d3.csv("data/Cleaned_grad_rates.csv"),         // CSV with graduation rates by year
+  d3.csv("data/Cleaned_salaries.csv")            // CSV with teacher salaries by year
+]).then(([districts, gradRates, salaries]) => {
+  const selectedYear = 2021;  // Default year for data filtering
+
+  // Create a lookup table for graduation rates by district code
+  const gradByCode = {};
+  gradRates.forEach(d => {
+    const code = d["District Code"].toString().padStart(8, "0"); // Normalize district code
+    if (+d["Year"] === selectedYear) {
+      let rate = d["% Graduated"];
+      if (typeof rate === "string") {
+        rate = rate.replace("%", "").trim(); // Remove percent sign and whitespace
+      }
+      rate = parseFloat(rate);
+      if (!isNaN(rate)) {
+        gradByCode[code] = rate; // Add to lookup if valid number
+      }
+    }
+  });
+
+  // Set up SVG canvas dimensions
+  const width = 960;
+  const height = 700;
+
+  // Create an SVG element and append to the #map container
+  const svg = d3.select("#map")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  // Define a geographical projection centered on Massachusetts
+  const projection = d3.geoAlbers()
+    .center([0, 42.3])
+    .rotate([71.8, 0])
+    .parallels([29.5, 45.5])
+    .scale(15000)
+    .translate([width / 2, height / 2]);
+
+  // Create a path generator based on the projection
   const path = d3.geoPath().projection(projection);
 
-  const color = d3.scaleQuantize().domain([60, 100]).range(d3.schemeBlues[7]);
+  // Define a color scale for graduation rates
+  const colorScale = d3.scaleSequential(d3.interpolateBlues)
+    .domain([60, 100]); // Expected graduation rate range
 
-  const yearSlider = document.getElementById("yearSlider");
-  const yearValue = document.getElementById("yearValue");
-  const subtitle = d3.select("#subtitle");
-
-  function updateMap(selectedYear) {
-    const gradByCode = {};
-
-    gradRates.forEach(d => {
-      const code = d["District Code"].toString().padStart(8, "0");
-      if (+d["Year"] === selectedYear) {
-        let rate = d["% Graduated"];
-        if (typeof rate === "string") {
-          rate = rate.replace("%", "").trim();
-        }
-        rate = parseFloat(rate);
-        if (!isNaN(rate)) {
-          gradByCode[code] = rate;
-        }
-      }
+  // Add districts to the map
+  svg.selectAll("path")
+    .data(districts.features)
+    .enter()
+    .append("path")
+    .attr("d", path) // Draw each district
+    .attr("fill", d => {
+      const code = d.properties.DISTCODE.padStart(8, "0");
+      const rate = gradByCode[code];
+      return rate !== undefined ? colorScale(rate) : "#ccc"; // Gray for missing data
+    })
+    .attr("stroke", "#333")
+    .attr("stroke-width", 0.5)
+    .append("title") // Tooltip with rate info
+    .text(d => {
+      const code = d.properties.DISTCODE.padStart(8, "0");
+      const rate = gradByCode[code];
+      return rate !== undefined ? `${d.properties.NAME}: ${rate.toFixed(1)}%` : `${d.properties.NAME}: No Data`;
     });
-
-    const paths = svg.selectAll("path").data(districts.features);
-
-    paths.enter()
-      .append("path")
-      .merge(paths)
-      .attr("d", path)
-      .attr("fill", d => {
-        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-        const rate = gradByCode[code];
-        return rate ? color(rate) : "#ccc";
-      })
-      .attr("stroke", "#333")
-      .selectAll("title").remove();
-
-    svg.selectAll("path")
-      .append("title")
-      .text(d => {
-        const name = d.properties.DISTRICT;
-        const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-        const rate = gradByCode[code];
-        return `${name} (${code})\nGraduation Rate: ${rate ?? 'N/A'}`;
-      });
-
-    paths.exit().remove();
-  }
-
-  // Initial map render
-  let selectedYear = +yearSlider.value || 2021;
-  yearValue.textContent = selectedYear;
-  subtitle.text(`Graduation Rate: ${selectedYear}`);
-  updateMap(selectedYear);
-
-  // Slider event
-  yearSlider.addEventListener("input", () => {
-    selectedYear = +yearSlider.value;
-    yearValue.textContent = selectedYear;
-    subtitle.text(`Graduation Rate: ${selectedYear}`);
-    updateMap(selectedYear);
-  });
 });
