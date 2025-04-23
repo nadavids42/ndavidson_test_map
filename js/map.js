@@ -1,4 +1,4 @@
-// map.js - Massachusetts Education Map with Slider for Year Selection
+// map.js - Massachusetts Education Map with Slider, Gradient Legend, and Click Info
 
 Promise.all([
   d3.json("data/SchoolDistricts_poly.geojson"),
@@ -45,7 +45,7 @@ Promise.all([
     .attr("d", path)
     .attr("stroke", "#333");
 
-  // --- LEGEND: add this AFTER the map, so it is on top! ---
+  // --- LEGEND (blue gradient, always visible and on top) ---
   const legendWidth = 300;
   const legendHeight = 10;
 
@@ -53,11 +53,12 @@ Promise.all([
   const legendGradient = defs.append("linearGradient")
     .attr("id", "legend-gradient");
 
+  // Use d3.interpolateBlues for a smooth color ramp
   legendGradient.selectAll("stop")
-    .data(d3.ticks(0, 1, 7))
+    .data(d3.range(0, 1.01, 0.01)) // 0, 0.01, ... 1.0
     .enter().append("stop")
     .attr("offset", d => `${d * 100}%`)
-    .attr("stop-color", d => color(60 + d * 40 / 7));
+    .attr("stop-color", d => d3.interpolateBlues(d));
 
   const legend = svg.append("g")
     .attr("class", "legend")
@@ -109,7 +110,7 @@ Promise.all([
         return rate ? color(rate) : "#ccc";
       })
       .on("click", function(event, d) {
-        const name = d.properties.DISTRICT_N;
+        const name = d.properties.DISTRICT_N;  // Correct property for name
         const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
         const rate = gradByCode[code];
 
