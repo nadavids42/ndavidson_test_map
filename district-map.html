@@ -4,25 +4,39 @@
   <meta charset="UTF-8">
   <title>Massachusetts School Dashboard</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
       background: #111;
       color: #eee;
       font-family: sans-serif;
       margin: 0;
-      padding: 0 1rem;
+      padding: 0 2rem;
     }
 
     h1 {
       margin-top: 1rem;
-      font-size: 1.7rem;
     }
 
-    select, input[type="range"] {
+    select {
       margin: 1rem 0;
       font-size: 1rem;
-      max-width: 100%;
+    }
+
+    /* Responsive map sizing for desktop and mobile */
+    #map svg {
+      width: 100%;
+      height: 60vw;
+      max-height: 90vh;
+      min-height: 400px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 900px) {
+      #map svg {
+        height: 60vw;
+        min-height: 250px;
+      }
     }
 
     .subtitle {
@@ -30,140 +44,45 @@
       color: #aaa;
     }
 
-    #dashboard {
-      display: flex;
-      gap: 24px;
-      align-items: flex-start;
-      margin-bottom: 20px;
+    /* Optional: Style for scatterplot SVG for consistency */
+    #scatterplot svg {
       width: 100%;
-      max-width: 1100px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    #map, #scatterplot {
-      flex: 1 1 0;
-      min-width: 0;
-      width: 100%;
-      padding: 0;
-      margin: 0;
-    }
-
-    .responsive-svg {
-      width: 100%;
-      height: auto;
-      max-width: 700px;
+      height: 400px;
       display: block;
-      margin: 0 auto;
-      background: #161925;
-      border-radius: 12px;
+      margin: 0 auto 2rem auto;
+      max-width: 600px;
+      background: #191c22;
+      border-radius: 1.25rem;
+      box-shadow: 0 2px 16px #0004;
     }
 
-    #scatterplot {
-      background: #181c26;
-      border-radius: 10px;
-      border: 1px solid #223;
-      padding: 10px;
-      min-width: 320px;
-    }
-
-    #info-box {
-      background: #222b;
-      color: #eee;
-      border-radius: 8px;
-      padding: 1rem;
-      margin-top: 1rem;
-      min-width: 220px;
-      max-width: 700px;
-      font-size: 1rem;
-      box-shadow: 0 2px 8px #0003;
-      word-break: break-word;
-    }
-
-    #scatterplot-tooltip {
-      position: absolute;
-      pointer-events: none;
-      background: #fff;
-      color: #222;
-      border: 1px solid #aaa;
-      border-radius: 6px;
-      padding: 7px 11px;
-      font-size: 15px;
-      box-shadow: 0 1px 4px #0002;
-      z-index: 999;
-      display: none;
-    }
-
-    @media (max-width: 950px) {
-      #dashboard {
-        flex-direction: column;
-        gap: 12px;
-      }
-      .responsive-svg {
-        min-height: 380px;
-        aspect-ratio: 1 / 1.1;
-        max-width: 100vw;
-        margin-left: 0;
-        margin-right: 0;
-      }
-      #scatterplot {
-        min-width: 200px;
-      }
-    }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 1.2rem;
-      }
-      #dashboard {
-        flex-direction: column;
-        gap: 0.5rem;
-        width: 100vw;
-      }
-      .responsive-svg {
-        min-height: 260px;
-        aspect-ratio: 1 / 1.2;
-        max-width: 100vw;
-      }
-      select, input[type="range"] {
-        font-size: 0.95rem;
-        width: 100%;
-      }
-      #scatterplot, #map {
-        padding: 0;
-      }
-      #info-box {
-        min-width: 120px;
-        padding: 0.7rem 0.4rem;
-        font-size: 0.95rem;
-        max-width: 98vw;
-      }
-    }
+    /* You can further customize info box, sliders, etc. */
   </style>
 </head>
 <body>
   <h1>Massachusetts Public School Districts</h1>
   <p class="subtitle" id="subtitle">Graduation Rate: 2021</p>
 
-  <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 0.5rem;">
-    <label for="metricSelect" class="text-white font-semibold">View:</label>
-    <select id="metricSelect">
-      <option value="grad">Graduation Rate</option>
-      <option value="salary">Average Salary</option>
-    </select>
-    <label for="yearSlider" class="text-white font-semibold" style="margin-left: 1.5rem;">
+  <label for="metricSelect" class="text-white font-semibold">View:</label>
+  <select id="metricSelect">
+    <option value="grad">Graduation Rate</option>
+    <option value="salary">Average Salary</option>
+  </select>
+
+  <div class="my-4">
+    <label for="yearSlider" class="text-white font-semibold">
       Year: <span id="yearValue">2021</span>
     </label>
     <input type="range" id="yearSlider" min="2013" max="2023" value="2021" step="1"
-           style="width: 200px; margin-left: 10px; max-width: 95vw;">
+           class="w-full appearance-none bg-gray-300 h-2 rounded-lg outline-none cursor-pointer">
   </div>
 
-  <div id="dashboard">
-    <div id="map"></div>
-    <div id="scatterplot"></div>
-  </div>
+  <!-- Scatterplot section -->
+  <div id="scatterplot" style="margin-top:2rem"></div>
 
-  <div id="info-box"></div>
+  <div id="map"></div>
+
+  <div id="info-box" style="margin-top: 1rem; padding: 1rem; border: 1px solid #444; background: #222; color: #eee; display: none;"></div>
 
   <script src="js/map.js"></script>
 </body>
