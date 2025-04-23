@@ -1,4 +1,4 @@
-// map.js - Map & Scatterplot with Linked Hover Highlighting
+// map.js - 50-100% Graduation Rate Scale for Map & Scatterplot
 
 Promise.all([
   d3.json("data/SchoolDistricts_poly.geojson"),
@@ -136,13 +136,13 @@ Promise.all([
     legendGradient.selectAll("stop").remove();
     if (metric === "grad") {
       legendGradient.selectAll("stop")
-        .data(d3.range(60, 101))
+        .data(d3.range(50, 101))
         .enter().append("stop")
-        .attr("offset", d => `${((d - 60) / 40) * 100}%`)
-        .attr("stop-color", d => d3.interpolateBlues((d - 60) / 40));
+        .attr("offset", d => `${((d - 50) / 50) * 100}%`)
+        .attr("stop-color", d => d3.interpolateBlues((d - 50) / 50));
       legendTitle.text("Graduation Rate");
-      legendLabels.data([60, 80, 100])
-        .attr("x", d => (d - 60) / 40 * legendWidth)
+      legendLabels.data([50, 75, 100])
+        .attr("x", d => (d - 50) / 50 * legendWidth)
         .text(d => `${d}%`);
     } else {
       const [minS, maxS] = domain;
@@ -171,11 +171,10 @@ Promise.all([
 
     // Axis domains
     const xExtent = d3.extent(scatterData, d => d.salary);
-    const yExtent = d3.extent(scatterData, d => d.grad);
 
     // Scales
     const x = d3.scaleLinear().domain([xExtent[0]*0.97, xExtent[1]*1.03]).range([margin.left, scatterWidth - margin.right]);
-    const y = d3.scaleLinear().domain([Math.max(60, yExtent[0]-2), Math.min(100, yExtent[1]+2)]).range([scatterHeight - margin.bottom, margin.top]);
+    const y = d3.scaleLinear().domain([50, 100]).range([scatterHeight - margin.bottom, margin.top]);
 
     // Clear plot area
     scatterSvg.selectAll("*").remove();
@@ -216,7 +215,7 @@ Promise.all([
       .attr("fill", "#009bcd")
       .attr("stroke", "#fff")
       .attr("stroke-width", 1.2)
-      .attr("data-code", d => d.code) // for linking
+      .attr("data-code", d => d.code)
       .on("mouseover", function(event, d) {
         d3.select(this).attr("fill", "#ff6600").attr("r", 10);
         // Highlight corresponding map path
@@ -285,9 +284,9 @@ Promise.all([
 
     let color, getValue, legendDomain;
     if (metric === "grad") {
-      color = d3.scaleQuantize().domain([60, 100]).range(d3.schemeBlues[7]);
+      color = d3.scaleQuantize().domain([50, 100]).range(d3.schemeBlues[7]);
       getValue = code => gradByCode[code];
-      legendDomain = [60, 100];
+      legendDomain = [50, 100];
     } else {
       const salariesThisYear = Object.values(salaryByCode).filter(s => s > 0);
       const minS = Math.floor(d3.min(salariesThisYear) / 1000) * 1000;
