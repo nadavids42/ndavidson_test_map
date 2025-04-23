@@ -7,9 +7,10 @@ Promise.all([
 ]).then(([districts, gradRates, salaries]) => {
   const selectedYear = 2021;
 
+  // Create a lookup table for graduation rates
   const gradByCode = {};
   gradRates.forEach(d => {
-    const code = d["District Code"].toString().padStart(8, "0");
+    const code = d["District Code"].toString(); // No zero-padding
     if (+d["Year"] === selectedYear) {
       let rate = d["% Graduated"];
       if (typeof rate === "string") {
@@ -22,6 +23,7 @@ Promise.all([
     }
   });
 
+  const allRates = Object.values(gradByCode);
   const width = 960;
   const height = 700;
 
@@ -40,9 +42,9 @@ Promise.all([
   const path = d3.geoPath().projection(projection);
 
   const colorScale = d3.scaleSequential(d3.interpolateBlues)
-    .domain([60, 100]);
+    .domain(d3.extent(allRates)); // Dynamic domain based on actual data
 
-  // Add a defs block for gradient
+  // Add a defs block for the legend gradient
   const defs = svg.append("defs");
   const legendGradient = defs.append("linearGradient")
     .attr("id", "legend-gradient");
@@ -51,23 +53,23 @@ Promise.all([
     .data(d3.ticks(0, 1, 10))
     .enter().append("stop")
     .attr("offset", d => `${d * 100}%`)
-    .attr("stop-color", d => colorScale(60 + d * 40));
+    .attr("stop-color", d => colorScale(60 + d * 40)); // Assume min around 60
 
-  // Draw map
+  // Draw the map
   svg.selectAll("path")
     .data(districts.features)
     .enter()
     .append("path")
     .attr("d", path)
     .attr("fill", d => {
-      const code = d.properties.DISTCODE.padStart(8, "0");
+      const code = d.properties.DISTCODE.toString(); // No padding
       const rate = gradByCode[code];
       return rate !== undefined ? colorScale(rate) : "#ccc";
     })
     .attr("stroke", "#333")
     .attr("stroke-width", 0.5)
     .on("click", function (event, d) {
-      const code = d.properties.DISTCODE.padStart(8, "0");
+      const code = d.properties.DISTCODE.toString();
       const rate = gradByCode[code];
       const infoBox = document.getElementById("info-box");
 
@@ -79,7 +81,7 @@ Promise.all([
       infoBox.style.display = "block";
     });
 
-  // Add legend
+  // Add a legend
   const legendWidth = 300;
   const legendHeight = 10;
 
