@@ -31,31 +31,24 @@
       margin-top: 0;
       color: #aaa;
     }
-
-    #info-box {
-      margin-top: 1rem;
-      padding: 1rem;
-      border: 1px solid #444;
-      background: #222;
-      color: #eee;
-      display: none;
-    }
   </style>
 </head>
 <body>
   <h1>Massachusetts Public School Districts</h1>
   <p class="subtitle" id="subtitle">Graduation Rate: 2021</p>
 
-  <div class="my-4">
-    <label for="yearSlider" class="text-white font-semibold">
-      Year: <span id="yearValue">2021</span>
-    </label>
-    <input type="range" id="yearSlider" min="2013" max="2023" value="2021" step="1"
-           class="w-full appearance-none bg-gray-300 h-2 rounded-lg outline-none cursor-pointer">
-  </div>
+<div class="my-4">
+  <label for="yearSlider" class="text-white font-semibold">
+    Year: <span id="yearValue">2021</span>
+  </label>
+  <input type="range" id="yearSlider" min="2013" max="2023" value="2021" step="1"
+         class="w-full appearance-none bg-gray-300 h-2 rounded-lg outline-none cursor-pointer">
+</div>
+<!-- <svg></svg> -->
+
 
   <div id="map"></div>
-  <div id="info-box"></div>
+  <div id="info-box" style="margin-top: 1rem; padding: 1rem; border: 1px solid #444; background: #222; color: #eee; display: none;"></div>
 
   <script src="js/map.js"></script>
 </body>
