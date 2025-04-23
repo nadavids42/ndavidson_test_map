@@ -27,7 +27,6 @@
       color: #aaa;
     }
 
-    /* FLEX CONTAINER for map + scatter */
     .visual-container {
       display: flex;
       flex-direction: row;
@@ -37,30 +36,30 @@
       margin-top: 2rem;
     }
 
-    @media (max-width: 900px) {
-      .visual-container {
-        flex-direction: column;
-      }
+    #map,
+    #scatterplot {
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: 100%;
     }
 
     #map svg,
     #scatterplot svg {
       width: 100%;
       height: auto;
-      min-height: 400px;
+      min-height: 350px;
       max-height: 90vh;
       display: block;
     }
 
-    #map,
-    #scatterplot {
-      flex: 1 1 45%;
-    }
-
     @media (max-width: 900px) {
+      .visual-container {
+        flex-direction: column;
+      }
       #map,
       #scatterplot {
-        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
       }
     }
 
