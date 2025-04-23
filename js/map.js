@@ -1,4 +1,4 @@
-// map.js - Option 1: Toggle between Graduation Rate and Salary Color
+// map.js - Map + Scatterplot, Side-by-Side, Responsive
 
 Promise.all([
   d3.json("data/SchoolDistricts_poly.geojson"),
@@ -8,6 +8,16 @@ Promise.all([
   const width = 800;
   const height = 700;
   const svg = d3.select("#map").append("svg").attr("width", width).attr("height", height);
+
+  // --- Scatterplot config ---
+  const scatterWidth = 480;
+  const scatterHeight = 600;
+  const margin = {top: 30, right: 30, bottom: 60, left: 70};
+
+  const scatterSvg = d3.select("#scatterplot")
+    .append("svg")
+    .attr("width", scatterWidth)
+    .attr("height", scatterHeight);
 
   const projection = d3.geoMercator().fitSize([width, height], districts);
   const path = d3.geoPath().projection(projection);
@@ -29,9 +39,7 @@ Promise.all([
     .attr("value", maxYear)
     .attr("step", 1);
 
-  // --- Populate metric dropdown if not already there ---
   if (metricSelect.empty()) {
-    // Only create dropdown if not present
     d3.select(subtitle.node().parentNode)
       .insert("select", "#yearSlider")
       .attr("id", "metricSelect")
@@ -46,7 +54,6 @@ Promise.all([
       .text(d => d.label);
   }
 
-  // --- Data pre-processing for fast lookup ---
   function buildMetricLookups(selectedYear) {
     // Graduation rates
     const gradByCode = {};
@@ -92,7 +99,7 @@ Promise.all([
     .attr("d", path)
     .attr("stroke", "#333");
 
-  // --- Legend gradient (will be updated for salary vs. grad) ---
+  // --- Legend gradient ---
   const legendWidth = 300;
   const legendHeight = 10;
   const defs = svg.append("defs");
@@ -123,11 +130,11 @@ Promise.all([
     .attr("text-anchor", "middle")
     .style("fill", "#eee");
 
+  // --- Main update function (map + scatterplot) ---
   function updateLegend(domain, metric) {
     // Remove previous stops
     legendGradient.selectAll("stop").remove();
     if (metric === "grad") {
-      // Graduation rate: 60–100, blue
       legendGradient.selectAll("stop")
         .data(d3.range(60, 101))
         .enter().append("stop")
@@ -138,7 +145,6 @@ Promise.all([
         .attr("x", d => (d - 60) / 40 * legendWidth)
         .text(d => `${d}%`);
     } else {
-      // Salary: dynamic domain, green
       const [minS, maxS] = domain;
       legendGradient.selectAll("stop")
         .data(d3.range(minS, maxS + 1, (maxS - minS) / 100))
@@ -152,6 +158,121 @@ Promise.all([
     }
   }
 
+  function updateScatterplot(gradByCode, salaryByCode, selectedYear) {
+    // Prepare data
+    const scatterData = Object.keys(gradByCode)
+      .filter(code => salaryByCode[code] !== undefined)
+      .map(code => ({
+        code,
+        grad: gradByCode[code],
+        salary: salaryByCode[code],
+        name: (districts.features.find(f => (f.properties.ORG8CODE?.toString().padStart(8, "0")) === code) || {}).properties?.DISTRICT_N || "Unknown"
+      }));
+
+    // Axis domains
+    const xExtent = d3.extent(scatterData, d => d.salary);
+    const yExtent = d3.extent(scatterData, d => d.grad);
+
+    // Scales
+    const x = d3.scaleLinear().domain([xExtent[0]*0.97, xExtent[1]*1.03]).range([margin.left, scatterWidth - margin.right]);
+    const y = d3.scaleLinear().domain([Math.max(60, yExtent[0]-2), Math.min(100, yExtent[1]+2)]).range([scatterHeight - margin.bottom, margin.top]);
+
+    // Clear plot area
+    scatterSvg.selectAll("*").remove();
+
+    // Axes
+    scatterSvg.append("g")
+      .attr("transform", `translate(0,${scatterHeight - margin.bottom})`)
+      .call(d3.axisBottom(x).tickFormat(d => `$${d3.format(",.0f")(d)}`));
+    scatterSvg.append("g")
+      .attr("transform", `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).tickFormat(d => `${d}%`));
+
+    scatterSvg.append("text")
+      .attr("x", scatterWidth / 2)
+      .attr("y", scatterHeight - 18)
+      .attr("text-anchor", "middle")
+      .attr("fill", "#222")
+      .attr("font-size", "14px")
+      .text("Average Teacher Salary");
+
+    scatterSvg.append("text")
+      .attr("x", -scatterHeight / 2)
+      .attr("y", 18)
+      .attr("text-anchor", "middle")
+      .attr("transform", "rotate(-90)")
+      .attr("fill", "#222")
+      .attr("font-size", "14px")
+      .text("Graduation Rate (%)");
+
+    // Points
+    scatterSvg.selectAll("circle")
+      .data(scatterData)
+      .enter()
+      .append("circle")
+      .attr("cx", d => x(d.salary))
+      .attr("cy", d => y(d.grad))
+      .attr("r", 6)
+      .attr("fill", "#009bcd")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 1.2)
+      .on("mouseover", function(event, d) {
+        d3.select(this).attr("fill", "#ff6600");
+        // Show tooltip
+        let tooltip = d3.select("#scatterplot-tooltip");
+        if (tooltip.empty()) {
+          tooltip = d3.select("body").append("div").attr("id", "scatterplot-tooltip");
+        }
+        tooltip.html(
+          `<strong>${d.name}</strong><br>
+          Graduation Rate: ${d.grad.toFixed(1)}%<br>
+          Salary: $${d.salary.toLocaleString(undefined, {maximumFractionDigits: 0})}`
+        )
+        .style("position", "absolute")
+        .style("pointer-events", "none")
+        .style("background", "#fff")
+        .style("border", "1px solid #ccc")
+        .style("border-radius", "6px")
+        .style("padding", "7px 11px")
+        .style("font-size", "15px")
+        .style("box-shadow", "0 1px 4px #0002")
+        .style("left", (event.pageX + 18) + "px")
+        .style("top", (event.pageY - 10) + "px")
+        .style("display", "block");
+      })
+      .on("mousemove", function(event) {
+        d3.select("#scatterplot-tooltip")
+          .style("left", (event.pageX + 18) + "px")
+          .style("top", (event.pageY - 10) + "px");
+      })
+      .on("mouseleave", function() {
+        d3.select(this).attr("fill", "#009bcd");
+        d3.select("#scatterplot-tooltip").remove();
+      })
+      .on("click", function(event, d) {
+        // Highlight in info box
+        const infoBox = document.getElementById("info-box");
+        infoBox.innerHTML = `
+          <h3 style="margin-top: 0">${d.name || "Unknown District"}</h3>
+          <p><strong>District Code:</strong> ${d.code}</p>
+          <p><strong>Graduation Rate:</strong> ${d.grad !== undefined ? d.grad.toFixed(1) + "%" : "N/A"}</p>
+          <p><strong>Average Salary:</strong> ${d.salary !== undefined ? "$" + d.salary.toLocaleString(undefined, {maximumFractionDigits: 0}) : "N/A"}</p>
+        `;
+        infoBox.style.display = "block";
+      });
+
+    scatterSvg.append("text")
+      .attr("x", scatterWidth / 2)
+      .attr("y", margin.top - 12)
+      .attr("text-anchor", "middle")
+      .attr("font-size", "17px")
+      .attr("font-weight", "bold")
+      .attr("fill", "#1a3344")
+      .text(`Graduation Rate vs. Salary (${selectedYear})`);
+
+    // (Optional: add regression/trend line later!)
+  }
+
   function updateMap(selectedYear, metric) {
     const { gradByCode, salaryByCode } = buildMetricLookups(selectedYear);
 
@@ -161,7 +282,6 @@ Promise.all([
       getValue = code => gradByCode[code];
       legendDomain = [60, 100];
     } else {
-      // Only use salary values that exist for the current year for color scale
       const salariesThisYear = Object.values(salaryByCode).filter(s => s > 0);
       const minS = Math.floor(d3.min(salariesThisYear) / 1000) * 1000;
       const maxS = Math.ceil(d3.max(salariesThisYear) / 1000) * 1000;
@@ -170,7 +290,6 @@ Promise.all([
       legendDomain = [minS, maxS];
     }
 
-    // Update legend
     updateLegend(legendDomain, metric);
 
     svg.selectAll("g.districts path")
@@ -195,9 +314,11 @@ Promise.all([
       });
 
     svg.selectAll("g.districts path").selectAll("title").remove();
+
+    // --- Update scatterplot as well ---
+    updateScatterplot(gradByCode, salaryByCode, selectedYear);
   }
 
-  // --- Event Listeners ---
   function rerender() {
     const selectedYear = +yearSlider.node().value || maxYear;
     const selectedMetric = metricSelect.node().value;
