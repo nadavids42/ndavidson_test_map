@@ -48,6 +48,47 @@ Promise.all([
   const colorScale = d3.scaleSequential(d3.interpolateBlues)
     .domain([60, 100]); // Expected graduation rate range
 
+  // Add a legend for the color scale
+const legendWidth = 300;
+const legendHeight = 10;
+
+const legendSvg = svg.append("g")
+  .attr("transform", `translate(${width - legendWidth - 40}, ${height - 40})`);
+
+const legendGradient = svg.append("defs")
+  .append("linearGradient")
+  .attr("id", "legend-gradient");
+
+legendGradient.selectAll("stop")
+  .data(d3.ticks(0, 1, 10))
+  .enter().append("stop")
+  .attr("offset", d => `${d * 100}%`)
+  .attr("stop-color", d => colorScale(60 + d * 40));
+
+legendSvg.append("rect")
+  .attr("width", legendWidth)
+  .attr("height", legendHeight)
+  .style("fill", "url(#legend-gradient)")
+  .style("stroke", "#aaa")
+  .style("stroke-width", 0.5);
+
+legendSvg.append("text")
+  .attr("x", 0)
+  .attr("y", -5)
+  .text("Graduation Rate")
+  .style("fill", "#eee");
+
+legendSvg.selectAll("text.labels")
+  .data([60, 80, 100])
+  .enter()
+  .append("text")
+  .attr("x", d => (d - 60) / 40 * legendWidth)
+  .attr("y", 25)
+  .attr("text-anchor", "middle")
+  .text(d => `${d}%`)
+  .style("fill", "#eee");
+
+
   // Add districts to the map
   svg.selectAll("path")
     .data(districts.features)
