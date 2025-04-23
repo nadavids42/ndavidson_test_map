@@ -36,6 +36,45 @@ Promise.all([
     updateMap(selectedYear);
   });
 
+  // Create color legend
+  const legendWidth = 300;
+  const legendHeight = 10;
+
+  const defs = svg.append("defs");
+  const legendGradient = defs.append("linearGradient")
+    .attr("id", "legend-gradient");
+
+  legendGradient.selectAll("stop")
+    .data(d3.ticks(0, 1, 7))
+    .enter().append("stop")
+    .attr("offset", d => `${d * 100}%`)
+    .attr("stop-color", d => color(60 + d * 40 / 7));
+
+  const legend = svg.append("g")
+    .attr("transform", `translate(${width - legendWidth - 40}, ${height - 40})`);
+
+  legend.append("rect")
+    .attr("width", legendWidth)
+    .attr("height", legendHeight)
+    .style("fill", "url(#legend-gradient)")
+    .style("stroke", "#aaa");
+
+  legend.append("text")
+    .attr("x", 0)
+    .attr("y", -5)
+    .text("Graduation Rate")
+    .style("fill", "#eee");
+
+  legend.selectAll("text.labels")
+    .data([60, 80, 100])
+    .enter()
+    .append("text")
+    .attr("x", d => (d - 60) / 40 * legendWidth)
+    .attr("y", 25)
+    .attr("text-anchor", "middle")
+    .text(d => `${d}%`)
+    .style("fill", "#eee");
+
   function updateMap(selectedYear) {
     const gradByCode = {};
 
@@ -65,15 +104,18 @@ Promise.all([
         return rate ? color(rate) : "#ccc";
       })
       .attr("stroke", "#333")
-      .selectAll("title").remove();
-
-    svg.selectAll("path")
-      .append("title")
-      .text(d => {
+      .on("click", function(event, d) {
         const name = d.properties.DISTRICT;
         const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
         const rate = gradByCode[code];
-        return `${name} (${code})\nGraduation Rate: ${rate ?? 'N/A'}`;
+
+        const infoBox = document.getElementById("info-box");
+        infoBox.innerHTML = `
+          <h3 style="margin-top: 0">${name || "Unknown District"}</h3>
+          <p><strong>District Code:</strong> ${code}</p>
+          <p><strong>Graduation Rate:</strong> ${rate !== undefined ? rate.toFixed(1) + "%" : "N/A"}</p>
+        `;
+        infoBox.style.display = "block";
       });
 
     paths.exit().remove();
