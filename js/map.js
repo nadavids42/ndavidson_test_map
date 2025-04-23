@@ -87,21 +87,67 @@ Promise.all([
     .style("fill", "#eee");
 
   function updateMap(selectedYear) {
-    // Build lookup: always pad to 8 digits for consistent matching
-    const gradByCode = {};
-    gradRates.forEach(d => {
-      const code = d["District Code"].toString().padStart(8, "0");
-      if (+d["Year"] === selectedYear) {
-        let rate = d["% Graduated"];
-        if (typeof rate === "string") {
-          rate = rate.replace("%", "").trim();
-        }
-        rate = parseFloat(rate);
-        if (!isNaN(rate)) {
-          gradByCode[code] = rate;
-        }
+  // Graduation rates lookup
+  const gradByCode = {};
+  gradRates.forEach(d => {
+    const code = d["District Code"].toString().padStart(8, "0");
+    if (+d["Year"] === selectedYear) {
+      let rate = d["% Graduated"];
+      if (typeof rate === "string") {
+        rate = rate.replace("%", "").trim();
       }
+      rate = parseFloat(rate);
+      if (!isNaN(rate)) {
+        gradByCode[code] = rate;
+      }
+    }
+  });
+
+  // Salary lookup for the selected year
+  const salaryByCode = {};
+  salaries.forEach(d => {
+    const code = d["District Code"].toString().padStart(8, "0");
+    if (+d["Year"] === selectedYear) {
+      let salary = d["Average Salary"];
+      if (typeof salary === "string") {
+        salary = salary.replace("$", "").replace(",", "").trim();
+      }
+      salary = parseFloat(salary);
+      if (!isNaN(salary)) {
+        salaryByCode[code] = salary;
+      }
+    }
+  });
+
+  svg.selectAll("g.districts path")
+    .attr("fill", d => {
+      const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+      const rate = gradByCode[code];
+      if (rate === undefined) {
+        console.log('No graduation rate data for:', code, d.properties.DISTRICT_N);
+      }
+      return rate ? color(rate) : "#ccc";
+    })
+    .on("click", function(event, d) {
+      const name = d.properties.DISTRICT_N;
+      const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+      const rate = gradByCode[code];
+      const salary = salaryByCode[code];
+
+      const infoBox = document.getElementById("info-box");
+      infoBox.innerHTML = `
+        <h3 style="margin-top: 0">${name || "Unknown District"}</h3>
+        <p><strong>District Code:</strong> ${code}</p>
+        <p><strong>Graduation Rate:</strong> ${rate !== undefined ? rate.toFixed(1) + "%" : "N/A"}</p>
+        <p><strong>Average Salary:</strong> ${salary !== undefined ? "$" + salary.toLocaleString(undefined, {maximumFractionDigits: 0}) : "N/A"}</p>
+      `;
+      infoBox.style.display = "block";
     });
+
+  // Remove hover tooltips if any exist
+  svg.selectAll("g.districts path").selectAll("title").remove();
+}
+
 
     svg.selectAll("g.districts path")
       .attr("fill", d => {
