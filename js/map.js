@@ -46,45 +46,45 @@ Promise.all([
     .attr("stroke", "#333");
 
   // --- LEGEND (blue gradient, always visible and on top) ---
-  const legendWidth = 300;
-  const legendHeight = 10;
+const legendWidth = 300;
+const legendHeight = 10;
 
-  const defs = svg.append("defs");
-  const legendGradient = defs.append("linearGradient")
-    .attr("id", "legend-gradient");
+const defs = svg.append("defs");
+const legendGradient = defs.append("linearGradient")
+  .attr("id", "legend-gradient");
 
-  // Use d3.interpolateBlues for a smooth color ramp
-  legendGradient.selectAll("stop")
-    .data(d3.range(0, 1.01, 0.01)) // 0, 0.01, ... 1.0
-    .enter().append("stop")
-    .attr("offset", d => `${d * 100}%`)
-    .attr("stop-color", d => d3.interpolateBlues(d));
+// Build the gradient from 60 to 100 using d3.interpolateBlues
+legendGradient.selectAll("stop")
+  .data(d3.range(60, 101)) // 60, 61, ..., 100
+  .enter().append("stop")
+  .attr("offset", d => `${((d - 60) / 40) * 100}%`)
+  .attr("stop-color", d => d3.interpolateBlues((d - 60) / 40)); // 0 (light) to 1 (dark)
 
-  const legend = svg.append("g")
-    .attr("class", "legend")
-    .attr("transform", `translate(${width - legendWidth - 40}, ${height - 40})`);
+const legend = svg.append("g")
+  .attr("class", "legend")
+  .attr("transform", `translate(${width - legendWidth - 40}, ${height - 40})`);
 
-  legend.append("rect")
-    .attr("width", legendWidth)
-    .attr("height", legendHeight)
-    .style("fill", "url(#legend-gradient)")
-    .style("stroke", "#aaa");
+legend.append("rect")
+  .attr("width", legendWidth)
+  .attr("height", legendHeight)
+  .style("fill", "url(#legend-gradient)")
+  .style("stroke", "#aaa");
 
-  legend.append("text")
-    .attr("x", 0)
-    .attr("y", -5)
-    .text("Graduation Rate")
-    .style("fill", "#eee");
+legend.append("text")
+  .attr("x", 0)
+  .attr("y", -5)
+  .text("Graduation Rate")
+  .style("fill", "#eee");
 
-  legend.selectAll("text.labels")
-    .data([60, 80, 100])
-    .enter()
-    .append("text")
-    .attr("x", d => (d - 60) / 40 * legendWidth)
-    .attr("y", 25)
-    .attr("text-anchor", "middle")
-    .text(d => `${d}%`)
-    .style("fill", "#eee");
+legend.selectAll("text.labels")
+  .data([60, 80, 100])
+  .enter()
+  .append("text")
+  .attr("x", d => (d - 60) / 40 * legendWidth)
+  .attr("y", 25)
+  .attr("text-anchor", "middle")
+  .text(d => `${d}%`)
+  .style("fill", "#eee");
 
   function updateMap(selectedYear) {
     const gradByCode = {};
