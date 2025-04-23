@@ -37,6 +37,9 @@ Promise.all([
   const minYear = d3.min(allYears);
   const maxYear = d3.max(allYears);
 
+  const projection = d3.geoMercator().fitSize([width, height], districts);
+  const path = d3.geoPath().projection(projection);
+
   yearSlider
     .attr("min", minYear)
     .attr("max", maxYear)
