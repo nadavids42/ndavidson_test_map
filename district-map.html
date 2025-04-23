@@ -30,14 +30,11 @@
     .visual-container {
       display: flex;
       flex-direction: row;
-      justify-content: space-between;
-      flex-wrap: wrap;
       gap: 2rem;
       margin-top: 2rem;
     }
 
-    #map,
-    #scatterplot {
+    #map, #scatterplot {
       flex: 1 1 0;
       min-width: 0;
       max-width: 100%;
@@ -54,12 +51,11 @@
 
     @media (max-width: 900px) {
       .visual-container {
-        flex-direction: column;
+        flex-direction: column !important;
       }
-      #map,
-      #scatterplot {
-        width: 100%;
-        max-width: 100%;
+      #map, #scatterplot {
+        width: 100% !important;
+        max-width: 100% !important;
       }
     }
 
