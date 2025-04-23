@@ -161,6 +161,7 @@ Promise.all([
   function updateScatterplot(gradByCode, salaryByCode, selectedYear) {
     // Prepare data
     const scatterData = Object.keys(gradByCode)
+      console.log('Scatterplot data count:', scatterData.length, 'Sample:', scatterData.slice(0,3));
       .filter(code => salaryByCode[code] !== undefined)
       .map(code => ({
         code,
