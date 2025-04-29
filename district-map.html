@@ -190,16 +190,9 @@
   </div>
 
   <!-- Scripts -->
-<script>
-    function toggleMenu() {
-      document.getElementById('mobile-menu').classList.toggle('hidden');
-    }
-    function updateIcons() {
-      const html = document.documentElement;
-      document.getElementById('light-icon').classList.toggle('hidden', html.classList.contains('dark'));
-      document.getElementById('dark-icon').classList.toggle('hidden', !html.classList.contains('dark'));
-    }
-    // Initial dark mode setup
+<!-- Dark/Light Toggle Script -->
+  <script>
+    // Initial theme setup
     if (localStorage.theme === 'light') {
       document.documentElement.classList.remove('dark');
     } else if (localStorage.theme === 'dark') {
@@ -207,9 +200,18 @@
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.documentElement.classList.add('dark');
     }
-    window.addEventListener('DOMContentLoaded', () => {
-      updateIcons();
-    });
+
+    // Icon switcher
+    function updateDarkIcons() {
+      const html = document.documentElement;
+      document.getElementById('light-icon').style.display = html.classList.contains('dark') ? 'none' : 'block';
+      document.getElementById('dark-icon').style.display = html.classList.contains('dark') ? 'block' : 'none';
+    }
+
+    // Initial icon update on page load
+    document.addEventListener('DOMContentLoaded', updateDarkIcons);
+
+    // Toggle button
     document.getElementById('toggle-dark').onclick = function () {
       const html = document.documentElement;
       if (html.classList.contains('dark')) {
@@ -219,8 +221,8 @@
         html.classList.add('dark');
         localStorage.theme = 'dark';
       }
-      updateIcons();
-    };
+      updateDarkIcons();
+    }
   </script>
 
 
