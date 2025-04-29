@@ -196,37 +196,47 @@
 
   <!-- Scripts -->
   <script>
-    function toggleMenu() {
-      document.getElementById('mobile-menu').classList.toggle('hidden');
+  function toggleMenu() {
+    document.getElementById('mobile-menu').classList.toggle('hidden');
+  }
+
+  function updateIcons() {
+    const html = document.documentElement;
+    const lightIcon = document.getElementById('light-icon');
+    const darkIcon = document.getElementById('dark-icon');
+
+    if (lightIcon && darkIcon) {
+      lightIcon.classList.toggle('hidden', html.classList.contains('dark'));
+      darkIcon.classList.toggle('hidden', !html.classList.contains('dark'));
     }
-    function updateIcons() {
-      const html = document.documentElement;
-      document.getElementById('light-icon').classList.toggle('hidden', html.classList.contains('dark'));
-      document.getElementById('dark-icon').classList.toggle('hidden', !html.classList.contains('dark'));
-    }
-    // Initial dark mode setup
+  }
+
+  // Wait for DOM and icons to exist before toggling
+  document.addEventListener('DOMContentLoaded', () => {
+    const html = document.documentElement;
+
+    // Set initial theme
     if (localStorage.theme === 'light') {
-      document.documentElement.classList.remove('dark');
+      html.classList.remove('dark');
     } else if (localStorage.theme === 'dark') {
-      document.documentElement.classList.add('dark');
+      html.classList.add('dark');
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.classList.add('dark');
+      html.classList.add('dark');
     }
-    window.addEventListener('DOMContentLoaded', () => {
-      updateIcons();
-    });
-    document.getElementById('toggle-dark').onclick = function () {
-      const html = document.documentElement;
-      if (html.classList.contains('dark')) {
-        html.classList.remove('dark');
-        localStorage.theme = 'light';
-      } else {
-        html.classList.add('dark');
-        localStorage.theme = 'dark';
-      }
-      updateIcons();
-    };
-  </script>
+
+    updateIcons();
+
+    // Toggle on button click
+    const toggleBtn = document.getElementById('toggle-dark');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        html.classList.toggle('dark');
+        localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+        updateIcons();
+      });
+    }
+  });
+</script>
 
   <!-- Modular Dashboard JS -->
   <script type="module" src="js/app.js"></script>
