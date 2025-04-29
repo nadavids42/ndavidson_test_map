@@ -1,7 +1,8 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import { METRICS } from "./metrics.js";
 
-let selectedDistricts = [];  // Keep global selection
-let selectedTrendMetric = "grad_# Graduated";  // Default starting metric
+let selectedDistricts = [];
+let selectedMetricCol = METRICS[0].col;  // Default to first metric
 
 export function renderLineChart(data) {
   const margin = { top: 40, right: 150, bottom: 60, left: 60 };
@@ -17,39 +18,23 @@ export function renderLineChart(data) {
     .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  const xScale = d3.scaleLinear().range([0, width]);
-  const yScale = d3.scaleLinear().range([height, 0]);
-
-  const xAxisGroup = svg.append("g")
-    .attr("transform", `translate(0,${height})`);
-  const yAxisGroup = svg.append("g");
-
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-  const lineGenerator = d3.line()
-    .x(d => xScale(d.year))
-    .y(d => yScale(d.value))
-    .curve(d3.curveMonotoneX);
-
-  // --- Metric dropdown population ---
-  const allColumns = Object.keys(data[0]).filter(k => k !== "District Name" && k !== "Year");
-
-  const metricSelect = d3.select("#trendMetricSelect");
-  metricSelect.selectAll("option")
-    .data(allColumns)
+  const trendSelect = d3.select("#trendMetricSelect");
+  trendSelect.selectAll("option")
+    .data(METRICS)
     .enter()
     .append("option")
-    .attr("value", d => d)
-    .text(d => d.replace(/_/g, " "));
+    .attr("value", d => d.col)
+    .text(d => d.label);
 
-  metricSelect.property("value", selectedTrendMetric);
+  trendSelect.property("value", selectedMetricCol);
 
-  metricSelect.on("change", function() {
-    selectedTrendMetric = this.value;
+  trendSelect.on("change", function () {
+    selectedMetricCol = this.value;
     update(selectedDistricts);
   });
 
-  // --- District dropdown population ---
   const select = d3.select("#districtSelect")
     .attr("multiple", true)
     .attr("size", 6);
@@ -59,7 +44,7 @@ export function renderLineChart(data) {
   )
   .filter(([_, records]) =>
     records.some(d => {
-      const val = d[selectedTrendMetric];
+      const val = d[selectedMetricCol];
       return val && !isNaN(parseFloat(val.toString().replace("%", "").trim()));
     })
   )
@@ -79,10 +64,12 @@ export function renderLineChart(data) {
   });
 
   function update(districtNames) {
-    if (districtNames.length === 0) {
-      svg.selectAll("*").remove();
-      return;
-    }
+    svg.selectAll("*").remove();
+
+    if (districtNames.length === 0) return;
+
+    const metricMeta = METRICS.find(m => m.col === selectedMetricCol);
+    if (!metricMeta) return;
 
     const allSeries = districtNames.map((district, i) => {
       return {
@@ -92,7 +79,7 @@ export function renderLineChart(data) {
           .filter(d => d["District Name"] === district)
           .map(d => ({
             year: +d.Year,
-            value: parseFloat(d[selectedTrendMetric]?.toString().replace("%", "").trim())
+            value: parseFloat(d[selectedMetricCol]?.toString().replace("%", "").replace("$", "").replace(",", "").trim())
           }))
           .filter(d => !isNaN(d.value))
           .sort((a, b) => a.year - b.year)
@@ -102,23 +89,40 @@ export function renderLineChart(data) {
     const allYears = allSeries.flatMap(s => s.values.map(v => v.year));
     const allValues = allSeries.flatMap(s => s.values.map(v => v.value));
 
-    if (allSeries.length === 0) {
-      svg.selectAll("*").remove();
-      return;
-    }
+    const xScale = d3.scaleLinear().range([0, width]).domain(d3.extent(allYears));
+    const yScale = d3.scaleLinear().range([height, 0]).domain(d3.extent(allValues));
 
-    xScale.domain(d3.extent(allYears));
-    yScale.domain(d3.extent(allValues));
+    const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d"));
+    const yAxis = d3.axisLeft(yScale);
 
-    xAxisGroup.call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
-    yAxisGroup.call(d3.axisLeft(yScale));
+    svg.append("g")
+      .attr("transform", `translate(0,${height})`)
+      .call(xAxis);
 
-    svg.selectAll(".line-path").remove();
-    svg.selectAll(".dot").remove();
-    svg.selectAll(".legend-label").remove();
+    svg.append("g")
+      .call(yAxis);
+
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", height + 40)
+      .style("text-anchor", "middle")
+      .style("fill", "#ccc")
+      .text("Year");
+
+    svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -height / 2)
+      .attr("y", -45)
+      .style("text-anchor", "middle")
+      .style("fill", "#ccc")
+      .text(metricMeta.label);
+
+    const lineGenerator = d3.line()
+      .x(d => xScale(d.year))
+      .y(d => yScale(d.value))
+      .curve(d3.curveMonotoneX);
 
     allSeries.forEach(series => {
-      // Line
       svg.append("path")
         .datum(series.values)
         .attr("class", "line-path")
@@ -127,7 +131,6 @@ export function renderLineChart(data) {
         .attr("stroke-width", 2)
         .attr("d", lineGenerator);
 
-      // Dots
       svg.selectAll(null)
         .data(series.values)
         .enter()
@@ -139,7 +142,6 @@ export function renderLineChart(data) {
         .attr("fill", series.color);
     });
 
-    // Legend
     svg.selectAll(".legend-label")
       .data(allSeries)
       .enter()
@@ -152,6 +154,6 @@ export function renderLineChart(data) {
       .text(d => d.name.length > 20 ? d.name.slice(0, 18) + "…" : d.name);
   }
 
-  // Initial render: pick first two districts automatically
+  // Initial render
   update(districts.slice(0, 2));
 }
