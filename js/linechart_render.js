@@ -122,7 +122,8 @@ export function renderLineChart(data) {
         .attr("d", lineGenerator);
 
       // Dots
-      svg.selectAll(`.dot-${series.name.replace(/\s/g, "-")}`)
+      //svg.selectAll(`.dot-${series.name.replace(/\s/g, "-")}`)
+      svg.selectAll(null)
         .data(series.values)
         .enter()
         .append("circle")
