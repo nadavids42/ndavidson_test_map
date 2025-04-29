@@ -37,12 +37,17 @@ export function renderMap(
         .attr("r", 10);
     })
     .on("mouseleave", function(event, d) {
-      const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
-      d3.select(this).attr("stroke", "#333").attr("stroke-width", 1);
-      d3.selectAll(`#scatterplot circle[data-code='${code}']`)
-        .attr("fill", "#009bcd")
-        .attr("r", 6);
-    })
+  const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
+
+  // Only un-highlight if this is NOT the selected district
+  if (selectedDistrict !== code) {
+    d3.select(this).attr("stroke", "#333").attr("stroke-width", 1);
+    d3.selectAll(`#scatterplot circle[data-code='${code}']`)
+      .attr("fill", "#009bcd")
+      .attr("r", 6);
+  }
+});
+
     .on("click", function(event, d) {
   const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
   const name = d.properties.DISTRICT_N;
