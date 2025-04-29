@@ -64,10 +64,10 @@ export function renderLineChart(data) {
     .attr("multiple", true)
     .attr("size", 6);
 
-  const districtsWithGradRates = Array.from(
+  const districts = Array.from(
   d3.group(data, d => d["District Name"])
 )
-.filter(([name, records]) =>
+.filter(([_, records]) =>
   records.some(d => {
     const val = d["grad_# Graduated"];
     return val && !isNaN(parseFloat(val.replace("%", "").trim()));
