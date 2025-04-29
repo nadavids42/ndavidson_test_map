@@ -1,9 +1,9 @@
 // map.js - Responsive SVGs for Map & Scatterplot
 
 Promise.all([
-  d3.json("data/SchoolDistricts_poly.geojson"),
-  d3.csv("data/Cleaned_grad_rates.csv"),
-  d3.csv("data/Cleaned_salaries.csv")
+  d3.json("/data/SchoolDistricts_poly.geojson"),
+  d3.csv("/data/Cleaned_grad_rates.csv"),
+  d3.csv("/data/Cleaned_salaries.csv")
 ]).then(([districts, gradRates, salaries]) => {
   const width = 800;
   const height = 600;
@@ -65,7 +65,7 @@ Promise.all([
     // Graduation rates
     const gradByCode = {};
     gradRates.forEach(d => {
-      const code = d["District Code"].toString().padStart(8, "0");
+      const code = d["District Code"].toString().trim().padStart(8, "0");
       if (+d["Year"] === selectedYear) {
         let rate = d["% Graduated"];
         if (typeof rate === "string") {
@@ -81,7 +81,7 @@ Promise.all([
     // Salary
     const salaryByCode = {};
     salaries.forEach(d => {
-      const code = d["District Code"].toString().padStart(8, "0");
+      const code = d["District Code"].toString().trim().padStart(8, "0");
       if (+d["Year"] === selectedYear) {
         let salary = d["Average Salary"];
         if (typeof salary === "string") {
@@ -173,7 +173,7 @@ Promise.all([
         code,
         grad: gradByCode[code],
         salary: salaryByCode[code],
-        name: (districts.features.find(f => (f.properties.ORG8CODE?.toString().padStart(8, "0")) === code) || {}).properties?.DISTRICT_N || "Unknown"
+        name: (districts.features.find(f => (f.properties.ORG8CODE?.toString().trim().padStart(8, "0")) === code) || {}).properties?.DISTRICT_N || "Unknown"
       }));
 
     // Clear plot area
