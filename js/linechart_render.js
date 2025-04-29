@@ -20,71 +20,67 @@ export function renderLineChart(data) {
 
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-  // Populate metric dropdown
-  trendSelect.on("change", function () {
-  selectedMetricCol = this.value;
-
-  // Repopulate district options based on the new metric
-  const districts = Array.from(
-    d3.group(data, d => d["District Name"])
-  )
-    .filter(([_, records]) =>
-      records.some(d => {
-        const val = d[selectedMetricCol];
-        return val && !isNaN(parseFloat(val.toString().replace(/[%$,]/g, "").trim()));
-      })
-    )
-    .map(([name]) => name)
-    .sort();
-
-  // Clear and re-populate districtSelect
-  select.selectAll("option").remove();
-  select.selectAll("option")
-    .data(districts)
-    .enter()
-    .append("option")
-    .attr("value", d => d)
-    .text(d => d);
-
-  // Restore previous selection if available
-  if (selectedDistricts.length > 0) {
-    select.selectAll("option").property("selected", d => selectedDistricts.includes(d));
-  } else {
-    selectedDistricts = districts.slice(0, 2);
-    select.selectAll("option").property("selected", d => selectedDistricts.includes(d));
-  }
-
-  update(selectedDistricts);
-});
-
-
-  // Populate district dropdown
-  const select = d3.select("#districtSelect")
+  const trendSelect = d3.select("#trendMetricSelect");
+  const districtSelect = d3.select("#districtSelect")
     .attr("multiple", true)
     .attr("size", 6);
 
-  const districts = Array.from(
-    d3.group(data, d => d["District Name"])
-  )
-    .filter(([_, records]) =>
-      records.some(d => {
-        const val = d[selectedMetricCol];
-        return val && !isNaN(parseFloat(val.toString().replace(/[%$,]/g, "").trim()));
-      })
-    )
-    .map(([name]) => name)
-    .sort();
-
-  select.selectAll("option")
-    .data(districts)
+  // Populate trend metric dropdown
+  trendSelect.selectAll("option")
+    .data(METRICS)
     .enter()
     .append("option")
-    .attr("value", d => d)
-    .text(d => d);
+    .attr("value", d => d.col)
+    .text(d => d.label);
 
-  select.on("change", function () {
+  trendSelect.property("value", selectedMetricCol);
+
+  // Helper: update district dropdown based on selected metric
+  function updateDistrictDropdown(metricCol) {
+    const validDistricts = Array.from(
+      d3.group(data, d => d["District Name"])
+    )
+      .filter(([_, records]) =>
+        records.some(d => {
+          const val = d[metricCol];
+          return val && !isNaN(parseFloat(val.toString().replace(/[%$,]/g, "").trim()));
+        })
+      )
+      .map(([name]) => name)
+      .sort();
+
+    districtSelect.selectAll("option").remove();
+    districtSelect.selectAll("option")
+      .data(validDistricts)
+      .enter()
+      .append("option")
+      .attr("value", d => d)
+      .text(d => d);
+
+    if (selectedDistricts.length > 0) {
+      districtSelect.selectAll("option").property("selected", d => selectedDistricts.includes(d));
+    } else {
+      selectedDistricts = validDistricts.slice(0, 2);
+      districtSelect.selectAll("option").property("selected", d => selectedDistricts.includes(d));
+    }
+
+    return validDistricts;
+  }
+
+  // Initial district list
+  const districts = updateDistrictDropdown(selectedMetricCol);
+
+  // Handle district selection
+  districtSelect.on("change", function () {
     selectedDistricts = Array.from(this.selectedOptions).map(opt => opt.value);
     update(selectedDistricts);
+  });
+
+  // Handle trend metric change
+  trendSelect.on("change", function () {
+    selectedMetricCol = this.value;
+    const updated = updateDistrictDropdown(selectedMetricCol);
+    update(selectedDistricts.length ? selectedDistricts : updated.slice(0, 2));
   });
 
   function update(districtNames) {
@@ -156,7 +152,6 @@ export function renderLineChart(data) {
       .y(d => yScale(d.value))
       .curve(d3.curveMonotoneX);
 
-    // Tooltip setup
     let tooltip = d3.select("#lineChart-tooltip");
     if (tooltip.empty()) {
       tooltip = d3.select("body")
@@ -218,5 +213,5 @@ export function renderLineChart(data) {
   }
 
   // Initial render
-  update(districts.slice(0, 2));
+  update(selectedDistricts.length > 0 ? selectedDistricts : districts.slice(0, 2));
 }
