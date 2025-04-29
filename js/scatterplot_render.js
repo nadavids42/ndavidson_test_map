@@ -1,4 +1,6 @@
 // scatterplot_render.js
+let selectedDistrict = null;  // <-- Track selected district globally
+
 export function updateScatterplot(
   scatterSvg,
   xByCode,
@@ -144,23 +146,48 @@ export function updateScatterplot(
       d3.select("#scatterplot-tooltip").remove();
     })
     .on("click", function (event, d) {
-      d3.selectAll("#map g.districts path")
-        .attr("stroke", "#333")
-        .attr("stroke-width", 1);
+  const isSame = selectedDistrict === d.code;
 
-      d3.select(`#map g.districts path[data-code='${d.code}']`)
-        .attr("stroke", "#ff6600")
-        .attr("stroke-width", 4);
+  // Clear previous selection if switching
+  d3.selectAll("#map g.districts path")
+    .attr("stroke", "#333")
+    .attr("stroke-width", 1);
 
-      const infoBox = document.getElementById("info-box");
-      infoBox.innerHTML = `
-        <h3 style="margin-top: 0">${d.name || "Unknown District"}</h3>
-        <p><strong>District Code:</strong> ${d.code}</p>
-        <p><strong>${xMetricObj.label}:</strong> ${xMetricObj.format(d.x)}</p>
-        <p><strong>${yMetricObj.label}:</strong> ${yMetricObj.format(d.y)}</p>
-      `;
-      infoBox.style.display = "block";
-    });
+  d3.selectAll("circle")
+    .attr("fill", "#009bcd")
+    .attr("r", 6);
+
+  if (isSame) {
+    // Deselect if clicked again
+    selectedDistrict = null;
+    document.getElementById("info-box").style.display = "none";
+    return;
+  }
+
+  // Update global selection
+  selectedDistrict = d.code;
+
+  // Highlight map
+  d3.select(`#map g.districts path[data-code='${d.code}']`)
+    .attr("stroke", "#ff6600")
+    .attr("stroke-width", 4);
+
+  // Highlight this point
+  d3.select(this)
+    .attr("fill", "#ff6600")
+    .attr("r", 10);
+
+  // Update info box
+  const infoBox = document.getElementById("info-box");
+  infoBox.innerHTML = `
+    <h3 style="margin-top: 0">${d.name || "Unknown District"}</h3>
+    <p><strong>District Code:</strong> ${d.code}</p>
+    <p><strong>${xMetricObj.label}:</strong> ${xMetricObj.format(d.x)}</p>
+    <p><strong>${yMetricObj.label}:</strong> ${yMetricObj.format(d.y)}</p>
+  `;
+  infoBox.style.display = "block";
+});
+
 
   // Title
   scatterSvg.append("text")
