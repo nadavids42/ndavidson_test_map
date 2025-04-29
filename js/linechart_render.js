@@ -6,12 +6,13 @@ export function renderLineChart(data) {
   const height = 400 - margin.top - margin.bottom;
 
   const svg = d3.select("#lineChart")
-  .append("svg")
-    .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
-    .attr("preserveAspectRatio", "xMidYMid meet")
-    .classed("w-full h-auto", true)
-  .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
+    .append("svg")
+      .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .style("width", "100%")  // ✅ Responsive behavior
+      .style("height", "auto")
+    .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
   const xScale = d3.scaleLinear().range([0, width]);
   const yScale = d3.scaleLinear().range([height, 0]);
@@ -61,7 +62,7 @@ export function renderLineChart(data) {
   // Multi-select dropdown
   const select = d3.select("#districtSelect")
     .attr("multiple", true)
-    .attr("size", 6); // adjustable
+    .attr("size", 6);
 
   const districts = Array.from(new Set(data.map(d => d["District Name"]))).sort();
   select.selectAll("option")
@@ -113,7 +114,7 @@ export function renderLineChart(data) {
     svg.selectAll(".legend-label").remove();
 
     allSeries.forEach(series => {
-      // Draw line
+      // Line
       svg.append("path")
         .datum(series.values)
         .attr("class", "line-path")
@@ -123,7 +124,6 @@ export function renderLineChart(data) {
         .attr("d", lineGenerator);
 
       // Dots
-      //svg.selectAll(`.dot-${series.name.replace(/\s/g, "-")}`)
       svg.selectAll(null)
         .data(series.values)
         .enter()
@@ -156,6 +156,6 @@ export function renderLineChart(data) {
       .text(d => d.name.length > 20 ? d.name.slice(0, 18) + "…" : d.name);
   }
 
-  // Initial render (first 2 districts)
+  // Initial render
   update(districts.slice(0, 2));
 }
