@@ -163,6 +163,7 @@ loadData().then(([districts, allData, massDistricts]) => {
   setupControls(xMetricSelect, null, rerender, null, null, null, METRICS, "grad");
   setupControls(yMetricSelect, null, rerender, null, null, null, METRICS, "salary");
 
+  // --- Render Lind Char ---
   renderLineChart(allData);
 
   // Helper: always get selected year from whichever control is visible
