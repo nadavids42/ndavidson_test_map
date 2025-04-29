@@ -21,20 +21,42 @@ export function renderLineChart(data) {
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
   // Populate metric dropdown
-  const trendSelect = d3.select("#trendMetricSelect");
-  trendSelect.selectAll("option")
-    .data(METRICS)
+  trendSelect.on("change", function () {
+  selectedMetricCol = this.value;
+
+  // Repopulate district options based on the new metric
+  const districts = Array.from(
+    d3.group(data, d => d["District Name"])
+  )
+    .filter(([_, records]) =>
+      records.some(d => {
+        const val = d[selectedMetricCol];
+        return val && !isNaN(parseFloat(val.toString().replace(/[%$,]/g, "").trim()));
+      })
+    )
+    .map(([name]) => name)
+    .sort();
+
+  // Clear and re-populate districtSelect
+  select.selectAll("option").remove();
+  select.selectAll("option")
+    .data(districts)
     .enter()
     .append("option")
-    .attr("value", d => d.col)
-    .text(d => d.label);
+    .attr("value", d => d)
+    .text(d => d);
 
-  trendSelect.property("value", selectedMetricCol);
+  // Restore previous selection if available
+  if (selectedDistricts.length > 0) {
+    select.selectAll("option").property("selected", d => selectedDistricts.includes(d));
+  } else {
+    selectedDistricts = districts.slice(0, 2);
+    select.selectAll("option").property("selected", d => selectedDistricts.includes(d));
+  }
 
-  trendSelect.on("change", function () {
-    selectedMetricCol = this.value;
-    update(selectedDistricts);
-  });
+  update(selectedDistricts);
+});
+
 
   // Populate district dropdown
   const select = d3.select("#districtSelect")
