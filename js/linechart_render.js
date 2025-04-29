@@ -2,7 +2,7 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { METRICS } from "./metrics.js";
 
 let selectedDistricts = [];
-let selectedMetricCol = METRICS[0].col; // Default metric
+let selectedMetricCol = METRICS[0].col;
 
 export function renderLineChart(data) {
   const margin = { top: 40, right: 150, bottom: 60, left: 60 };
@@ -25,7 +25,7 @@ export function renderLineChart(data) {
     .attr("multiple", true)
     .attr("size", 6);
 
-  // Populate trend metric dropdown
+  // Populate metric dropdown
   trendSelect.selectAll("option")
     .data(METRICS)
     .enter()
@@ -35,73 +35,73 @@ export function renderLineChart(data) {
 
   trendSelect.property("value", selectedMetricCol);
 
-  // Helper: update district dropdown based on selected metric
+  // Helper: update dropdown using District Code and clean name
   function updateDistrictDropdown(metricCol) {
-    const validDistricts = Array.from(
-      d3.group(data, d => d["District Name"])
-    )
-      .filter(([_, records]) =>
-        records.some(d => {
-          const val = d[metricCol];
-          return val && !isNaN(parseFloat(val.toString().replace(/[%$,]/g, "").trim()));
-        })
-      )
-      .map(([name]) => name)
-      .sort();
+    const districtMap = new Map();
+
+    data.forEach(d => {
+      const code = d["District Code"]?.toString().padStart(8, "0");
+      const name = d["District Name"]?.trim();
+      const val = d[metricCol];
+      const isValid = val && !isNaN(parseFloat(val.toString().replace(/[%$,]/g, "").trim()));
+      if (code && name && isValid && !districtMap.has(code)) {
+        districtMap.set(code, name);
+      }
+    });
+
+    const districtList = Array.from(districtMap.entries()) // [ [code, name], ... ]
+      .sort((a, b) => a[1].localeCompare(b[1]));
 
     districtSelect.selectAll("option").remove();
     districtSelect.selectAll("option")
-      .data(validDistricts)
+      .data(districtList)
       .enter()
       .append("option")
-      .attr("value", d => d)
-      .text(d => d);
+      .attr("value", d => d[0])
+      .text(d => d[1]);
 
     if (selectedDistricts.length > 0) {
-      districtSelect.selectAll("option").property("selected", d => selectedDistricts.includes(d));
+      districtSelect.selectAll("option").property("selected", d => selectedDistricts.includes(d[0]));
     } else {
-      selectedDistricts = validDistricts.slice(0, 2);
-      districtSelect.selectAll("option").property("selected", d => selectedDistricts.includes(d));
+      selectedDistricts = districtList.slice(0, 2).map(d => d[0]);
+      districtSelect.selectAll("option").property("selected", d => selectedDistricts.includes(d[0]));
     }
 
-    return validDistricts;
+    return districtList.map(d => d[0]);
   }
 
-  // Initial district list
+  // Initial render
   const districts = updateDistrictDropdown(selectedMetricCol);
 
-  // Handle district selection
   districtSelect.on("change", function () {
     selectedDistricts = Array.from(this.selectedOptions).map(opt => opt.value);
     update(selectedDistricts);
   });
 
-  // Handle trend metric change
   trendSelect.on("change", function () {
     selectedMetricCol = this.value;
     const updated = updateDistrictDropdown(selectedMetricCol);
     update(selectedDistricts.length ? selectedDistricts : updated.slice(0, 2));
   });
 
-  function update(districtNames) {
+  function update(districtCodes) {
     svg.selectAll("*").remove();
-
-    if (districtNames.length === 0) return;
+    if (districtCodes.length === 0) return;
 
     const metricMeta = METRICS.find(m => m.col === selectedMetricCol);
     if (!metricMeta) return;
 
-    const allSeries = districtNames.map((district, i) => {
+    const allSeries = districtCodes.map((code, i) => {
+      const filtered = data.filter(d => d["District Code"]?.toString().padStart(8, "0") === code);
+      const districtName = filtered[0]?.["District Name"] ?? `District ${code}`;
+
       return {
-        name: district,
+        name: districtName,
         color: colorScale(i),
-        values: data
-          .filter(d => d["District Name"] === district)
+        values: filtered
           .map(d => ({
             year: +d.Year,
-            value: parseFloat(
-              d[selectedMetricCol]?.toString().replace(/[%$,]/g, "").trim()
-            )
+            value: parseFloat(d[selectedMetricCol]?.toString().replace(/[%$,]/g, "").trim())
           }))
           .filter(d => !isNaN(d.value))
           .sort((a, b) => a.year - b.year)
@@ -212,6 +212,5 @@ export function renderLineChart(data) {
       .text(d => d.name.length > 20 ? d.name.slice(0, 18) + "…" : d.name);
   }
 
-  // Initial render
-  update(selectedDistricts.length > 0 ? selectedDistricts : districts.slice(0, 2));
+  update(selectedDistricts.length ? selectedDistricts : districts.slice(0, 2));
 }
