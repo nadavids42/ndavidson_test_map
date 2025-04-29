@@ -84,7 +84,7 @@ export function renderLineChart(data) {
           .filter(d => d["District Name"] === district)
           .map(d => ({
             year: +d.Year,
-            gradRate: parseFloat(d["% Graduated"].replace("%", "").trim())
+            gradRate: parseFloat(d["grad_# Graduated"].replace("%", "").trim())
           }))
           .filter(d => !isNaN(d.gradRate))
           .sort((a, b) => a.year - b.year)
