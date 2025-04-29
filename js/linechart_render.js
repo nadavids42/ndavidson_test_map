@@ -64,7 +64,17 @@ export function renderLineChart(data) {
     .attr("multiple", true)
     .attr("size", 6);
 
-  const districts = Array.from(new Set(data.map(d => d["District Name"]))).sort();
+  const districtsWithGradRates = Array.from(
+  d3.group(data, d => d["District Name"])
+)
+.filter(([name, records]) =>
+  records.some(d => {
+    const val = d["grad_# Graduated"];
+    return val && !isNaN(parseFloat(val.replace("%", "").trim()));
+  })
+)
+.map(([name]) => name)
+.sort();
   select.selectAll("option")
     .data(districts)
     .enter()
