@@ -46,7 +46,7 @@ export function renderMap(
       .attr("fill", "#009bcd")
       .attr("r", 6);
   }
-});
+})
 
     .on("click", function(event, d) {
   const code = d.properties.ORG8CODE?.toString().padStart(8, "0");
