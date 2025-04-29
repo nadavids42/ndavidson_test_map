@@ -190,27 +190,21 @@
   </div>
 
   <!-- Scripts -->
-  <script>
-  function toggleMenu() {
-    document.getElementById('mobile-menu').classList.toggle('hidden');
-  }
-
-  function updateIcons() {
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
     const html = document.documentElement;
     const lightIcon = document.getElementById('light-icon');
     const darkIcon = document.getElementById('dark-icon');
+    const toggleBtn = document.getElementById('toggle-dark');
 
-    if (lightIcon && darkIcon) {
-      lightIcon.classList.toggle('hidden', html.classList.contains('dark'));
-      darkIcon.classList.toggle('hidden', !html.classList.contains('dark'));
+    function syncIcons() {
+      if (!lightIcon || !darkIcon) return;
+      const isDark = html.classList.contains('dark');
+      lightIcon.classList.toggle('hidden', isDark);
+      darkIcon.classList.toggle('hidden', !isDark);
     }
-  }
 
-  // Wait for DOM and icons to exist before toggling
-  document.addEventListener('DOMContentLoaded', () => {
-    const html = document.documentElement;
-
-    // Set initial theme
+    // Set initial theme class
     if (localStorage.theme === 'light') {
       html.classList.remove('dark');
     } else if (localStorage.theme === 'dark') {
@@ -219,19 +213,18 @@
       html.classList.add('dark');
     }
 
-    updateIcons();
+    syncIcons(); // Ensure correct icon shows on load
 
-    // Toggle on button click
-    const toggleBtn = document.getElementById('toggle-dark');
     if (toggleBtn) {
       toggleBtn.addEventListener('click', () => {
         html.classList.toggle('dark');
         localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
-        updateIcons();
+        syncIcons(); // Sync after toggle
       });
     }
   });
 </script>
+
 
   <!-- Modular Dashboard JS -->
   <script type="module" src="js/app.js"></script>
