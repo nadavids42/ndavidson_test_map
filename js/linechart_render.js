@@ -2,7 +2,7 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 export function renderLineChart(data) {
   const margin = { top: 40, right: 150, bottom: 60, left: 60 };
-  const width = 700 - margin.left - margin.right;
+  const width = 800 - margin.left - margin.right;
   const height = 400 - margin.top - margin.bottom;
 
   const svg = d3.select("#lineChart")
