@@ -5,12 +5,14 @@ export function renderLineChart(data) {
   const width = 700 - margin.left - margin.right;
   const height = 400 - margin.top - margin.bottom;
 
-  const svg = d3.select("#lineChart")
-    .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+  const svgContainer = d3.select("#lineChart")
+  .append("svg")
+    .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+    .attr("preserveAspectRatio", "xMidYMid meet")
+    .classed("w-full h-auto", true) // <- important for Tailwind scaling
+  .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
 
   const xScale = d3.scaleLinear().range([0, width]);
   const yScale = d3.scaleLinear().range([height, 0]);
