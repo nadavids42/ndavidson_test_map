@@ -3,6 +3,8 @@ import { METRICS, buildLookupByCode } from './metrics.js';
 import { renderMap } from './map_render.js';
 import { updateScatterplot } from './scatterplot_render.js';
 import { setupControls } from './ui_controls.js';
+import { renderLineChart } from "./linechart_render.js";
+
 
 loadData().then(([districts, allData, massDistricts]) => {
   const width = 800;
@@ -160,6 +162,8 @@ loadData().then(([districts, allData, massDistricts]) => {
   setupControls(metricSelect, yearSlider, rerender, minYear, maxYear, defaultYear, METRICS, "grad");
   setupControls(xMetricSelect, null, rerender, null, null, null, METRICS, "grad");
   setupControls(yMetricSelect, null, rerender, null, null, null, METRICS, "salary");
+
+  renderLineChart(allData);
 
   // Helper: always get selected year from whichever control is visible
   function getSelectedYear() {
